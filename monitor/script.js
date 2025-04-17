@@ -28,7 +28,7 @@ Vue.createApp({
       showScrollButton: false,
 
       // --- Patient Data ---
-      patientRecords: {}, // {patientAccount: { date_key: { data: [], count: 0, ...sums }, filterKeys... } }
+      patientRecords: {}, // { patientAccount: { date_key: { data: [], count: 0, ...sums }, filterKeys... } }
       patientAccountsWithPasswords: [], // [[account, password], ...]
       unmonitoredPatients: [], // [account, ...]
       searchQuery: "",
@@ -38,9 +38,9 @@ Vue.createApp({
       currentDateMMDD: "",
       editingRecordIndex: -1, // Index of the record being edited within a date's data array
       editingRecordPatientAccount: "", // Which patient's record is being edited
-      tempPatientRecord: {}, // holds original values while editing a record
+      tempPatientRecord: {}, // Holds original values while editing a record
       isEditingRestriction: false, // Is any restriction currently being edited?
-      currentEditingPatient: "", // Which patient's restriction is beign edited
+      currentEditingPatient: "", // Which patient's restriction is being edited
       removingRecord: false, // Flag during record removal confirmation/API call
       confirming: false, // Flag to prevent sync during confirmation modal
       restrictionText: {},
@@ -112,11 +112,11 @@ Vue.createApp({
   // --- Watchers ---
   // Used for reacting to specific data changes, often for side effects like localStorage
   watch: {
-    stayOpenAfterSignup(val) {
-      localStorage.setItem("stayOpenAfterSignup", val);
+    stayOpenAfterSignup(newVal) {
+      localStorage.setItem("stayOpenAfterSignup", newVal);
     },
-    autoAddToMonitor(val) {
-      localStorage.setItem("autoAddToMonitor", val);
+    autoAddToMonitor(newVal) {
+      localStorage.setItem("autoAddToMonitor", newVal);
     },
     // Update filtered list when the main list or search query changes
     monitoredPatientAccounts() {
@@ -127,7 +127,7 @@ Vue.createApp({
     },
   },
 
-  // -- Lifecycle Hooks ---
+  // --- Lifecycle Hooks ---
   // Code to run at specific points in the component's lifecycle
   async created() {
     await this.fetchConfig();
