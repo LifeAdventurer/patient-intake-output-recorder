@@ -11,31 +11,46 @@ function debounce(func, delay) {
 Vue.createApp({
   data() {
     return {
+      // --- Core State ---
       account: "",
       password: "",
-      showPassword: false,
       authenticated: false,
-      currentDate: "",
-      currentTime: "",
-      currentDateYY_MM_DD: "",
-      // Patient
-      patientRecords: {},
+      apiUrl: "",
+      webUrl: "",
+      events: {}, // Loaded from events.json
+
+      // --- UI State ---
+      showPassword: false,
+      bootstrapAlertMessage: "",
+      bootstrapAlertClass: "alert-danger", // Default class
+      confirmMessage: "",
+      confirmResolver: null, // For Bootstrap confirm modal promise
+      showScrollButton: false,
+
+      // --- Patient Data ---
+      patientRecords: {}, // {patientAccount: { date_key: { data: [], count: 0, ...sums }, filterKeys... } }
+      patientAccountsWithPasswords: [], // [[account, password], ...]
       patientAccounts: [], // monitoredPatients
-      unmonitoredPatients: [],
-      patientAccountsWithPasswords: [],
-      filteredPatientAccounts: [],
-      // QR Code
+      unmonitoredPatients: [], // [account, ...]
+      searchQuery: "",
+      filteredPatientAccounts: [], // Derived from patientAccounts based on searchQuery
+
+      // --- Editing / Interaction State ---
+      currentDateMMDD: "",
+      editingRecordIndex: -1, // Index of the record being edited within a date's data array
+      editingRecordPatientAccount: "", // Which patient's record is being edited
+      tempPatientRecord: {}, // holds original values while editing a record
+      isEditingRestriction: false, // Is any restriction currently being edited?
+      currentEditingPatient: "", // Which patient's restriction is beign edited
+      removingRecord: false, // Flag during record removal confirmation/API call
+      confirming: false, // Flag to prevent sync during confirmation modal
+      restrictionText: {},
+
+      // --- QR Code Modal State ---
       qrCodePatient: "",
       qrCodePatientPassword: "",
-      //
-      searchQuery: "",
-      currentDateMMDD: "",
-      editingRecordIndex: -1,
-      editingRecordPatientAccount: "",
-      restrictionText: {},
-      showScrollButton: false,
-      removingRecord: false,
-      // signUpModal
+
+      // --- Sign Up Modal State ---
       signUpPatientAccount: "",
       signUpPatientPassword: "",
       signUpPatientSubmitted: false,
@@ -44,31 +59,27 @@ Vue.createApp({
       stayOpenAfterSignup:
         localStorage.getItem("stayOpenAfterSignup") === "true",
       autoAddToMonitor: localStorage.getItem("autoAddToMonitor") === "true",
-      // Bootstrap alert
-      bootstrapAlertMessage: "",
-      bootstrapAlertClass: "alert-danger",
-      // Bootstrap Confirm Modal
-      confirmMessage: "",
-      confirmResolver: null,
-      // Transfer Modal
+
+      // --- Transfer Modal State ---
       transferFrom: "",
       transferTo: "",
-      // Internal Usage
+
+      // --- Internal Configuration / Constants ---
       syncIntervalId: null,
       dietaryItems: ["food", "water", "urination", "defecation"],
+      // Keys added to each patient record if missing, also used for filtering in computed prop
+      // NOTE: 'isEditing' here is specific to the *restriction* editing state stored per patient
       keysToFilter: {
         isEditing: false,
         limitAmount: "",
         foodCheckboxChecked: false,
         waterCheckboxChecked: false,
       },
-      isEditingRestriction: false,
-      tempPatientRecord: {},
-      currentEditingPatient: "",
-      confirming: false,
-      apiUrl: "",
-      webUrl: "",
-      events: {},
+
+      // --- Date/Time ---
+      currentDate: "", // Formatted date string for display
+      currentTime: "", // Formatted time string for display
+      currentDateYY_MM_DD: "", // YYYY_M_D format for record keys
     };
   },
   async created() {
