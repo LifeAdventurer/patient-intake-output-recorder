@@ -118,6 +118,13 @@ Vue.createApp({
     autoAddToMonitor(val) {
       localStorage.setItem("autoAddToMonitor", val);
     },
+    // Update filtered list when the main list or search query changes
+    monitoredPatientAccounts() {
+      this.filterPatients(); // Re-filter if the source list changes
+    },
+    searchQuery() {
+      this.filterPatients(); // Re-filter when search query changes
+    },
   },
 
   // -- Lifecycle Hooks ---
@@ -291,7 +298,7 @@ Vue.createApp({
             this.events.messages.FETCH_MONITORING_PATIENTS_SUCCESS
         ) {
           this.processFetchedData(fetchedData);
-          this.filterPatients();
+          // No need to call filterPatients here, watcher will handle it if monitoredPatientAccounts changes
         }
       }
       await this.fetchUnmonitoredPatients();
@@ -513,7 +520,6 @@ Vue.createApp({
         // TODO: Remove this console.log
         console.log(message);
 
-        this.filteredPatientAccounts = this.monitoredPatientAccounts;
         // Refresh lists thoroughly
         await this.syncMonitorData();
       } else {
@@ -548,8 +554,8 @@ Vue.createApp({
             localStorage.setItem("password", this.password);
 
             this.processFetchedData(fetchedData);
-            this.filteredPatientAccounts = this.monitoredPatientAccounts;
             await this.fetchUnmonitoredPatients();
+            this.filterPatients();
         }
       }
     },
