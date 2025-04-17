@@ -6,6 +6,7 @@ from pydantic import (
     BaseModel,
     Field,
     NonNegativeInt,
+    PositiveInt,
     RootModel,
     model_validator,
 )
@@ -95,7 +96,7 @@ class DailyRecord(BaseModel):
 
 class PatientData(BaseModel):
     isEditing: bool
-    limitAmount: str
+    limitAmount: str | PositiveInt
     foodCheckboxChecked: bool
     waterCheckboxChecked: bool
     records: dict[str, DailyRecord] = Field(default_factory=dict)
@@ -133,6 +134,11 @@ class PatientData(BaseModel):
                 raise ValueError(
                     f"recordDate {record_date} should be equal to record key {key_date}"
                 )
+
+        if isinstance(self.limitAmount, str) and self.limitAmount != "":
+            raise ValueError(
+                "limitAmount should be a positive number or empty string"
+            )
 
 
 class UpdateDataModel(RootModel[PatientData]):
