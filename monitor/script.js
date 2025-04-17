@@ -30,7 +30,6 @@ Vue.createApp({
       // --- Patient Data ---
       patientRecords: {}, // {patientAccount: { date_key: { data: [], count: 0, ...sums }, filterKeys... } }
       patientAccountsWithPasswords: [], // [[account, password], ...]
-      patientAccounts: [], // monitoredPatients
       unmonitoredPatients: [], // [account, ...]
       searchQuery: "",
       filteredPatientAccounts: [], // Derived from patientAccounts based on searchQuery
@@ -102,6 +101,11 @@ Vue.createApp({
         reversedData[patientAccount] = reversedRecord;
       }
       return reversedData;
+    },
+
+    // Read-only list of monitored patient accounts
+    monitoredPatientAccounts() {
+      return this.patientAccountsWithPasswords.map((account) => account[0]);
     },
   },
 
@@ -252,10 +256,9 @@ Vue.createApp({
     processFetchedData(fetchedData) {
       this.patientRecords = fetchedData["patient_records"];
       this.patientAccountsWithPasswords = fetchedData["patient_accounts"];
-      this.patientAccounts = this.patientAccountsWithPasswords.map(
-        (account) => account[0],
-      );
-      this.patientAccounts.forEach((patientAccount) => {
+      // NOTE: monitoredPatientAccounts computed property will update automatically
+
+      this.monitoredPatientAccounts.forEach((patientAccount) => {
         let modified = false;
         Object.entries(this.keysToFilter).forEach(([key, value]) => {
           if (!(key in this.patientRecords[patientAccount])) {
@@ -380,7 +383,9 @@ Vue.createApp({
         return;
       }
 
-      const isTargetMonitored = this.patientAccounts.includes(this.transferTo);
+      const isTargetMonitored = this.monitoredPatientAccounts.includes(
+        this.transferTo,
+      );
       const isTargetUnmonitored = this.unmonitoredPatients.includes(
         this.transferTo,
       );
@@ -507,8 +512,10 @@ Vue.createApp({
       if (message === this.events.messages.DELETE_PATIENT_SUCCESS) {
         // TODO: Remove this console.log
         console.log(message);
-        this.filteredPatientAccounts = this.patientAccounts;
-        await this.fetchUnmonitoredPatients();
+
+        this.filteredPatientAccounts = this.monitoredPatientAccounts;
+        // Refresh lists thoroughly
+        await this.syncMonitorData();
       } else {
         console.error(message);
       }
@@ -541,7 +548,7 @@ Vue.createApp({
             localStorage.setItem("password", this.password);
 
             this.processFetchedData(fetchedData);
-            this.filteredPatientAccounts = this.patientAccounts;
+            this.filteredPatientAccounts = this.monitoredPatientAccounts;
             await this.fetchUnmonitoredPatients();
         }
       }
@@ -590,10 +597,10 @@ Vue.createApp({
     },
     searchPatient: debounce(function () {
       if (this.searchQuery.trim() === "") {
-        this.filteredPatientAccounts = this.patientAccounts;
+        this.filteredPatientAccounts = this.monitoredPatientAccounts;
         return;
       }
-      this.filteredPatientAccounts = this.patientAccounts.filter(
+      this.filteredPatientAccounts = this.monitoredPatientAccounts.filter(
         (patientAccount) => {
           return patientAccount
             .toLowerCase()
