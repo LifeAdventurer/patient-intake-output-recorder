@@ -291,7 +291,7 @@ Vue.createApp({
             this.events.messages.FETCH_MONITORING_PATIENTS_SUCCESS
         ) {
           this.processFetchedData(fetchedData);
-          this.searchPatient();
+          this.filterPatients();
         }
       }
       await this.fetchUnmonitoredPatients();
@@ -595,19 +595,21 @@ Vue.createApp({
         }
       }
     },
-    searchPatient: debounce(function () {
-      if (this.searchQuery.trim() === "") {
+
+    // --- Search & Filtering ---
+    // Debounced method to filter patient list based on searchQuery
+    filterPatients: debounce(function () {
+      const query = this.searchQuery.trim().toLowerCase();
+      if (query === "") {
         this.filteredPatientAccounts = this.monitoredPatientAccounts;
-        return;
+      } else {
+        this.filteredPatientAccounts = this.monitoredPatientAccounts.filter(
+          (account) => account.toLowerCase().includes(query),
+        );
       }
-      this.filteredPatientAccounts = this.monitoredPatientAccounts.filter(
-        (patientAccount) => {
-          return patientAccount
-            .toLowerCase()
-            .includes(this.searchQuery.toLowerCase());
-        },
-      );
-    }, 200),
+      // console.log("Filtered accounts:", this.filteredPatientAccounts);
+    }, 200), // 200ms debounce delay
+
     getFirstAndLastDates(patientAccount) {
       const keys = Object.keys(this.patientRecords[patientAccount]).filter(
         (key) => {
