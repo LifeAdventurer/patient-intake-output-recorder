@@ -82,10 +82,9 @@ Vue.createApp({
       currentDateYY_MM_DD: "", // YYYY_M_D format for record keys
     };
   },
-  async created() {
-    await this.fetchConfig();
-    await this.loadAPIEvents();
-  },
+
+  // --- Computed Properties ---
+  // Used for deriving data reactively from the main state
   computed: {
     reversedPatientRecords() {
       const reversedData = {};
@@ -103,6 +102,9 @@ Vue.createApp({
       return reversedData;
     },
   },
+
+  // --- Watchers ---
+  // Used for reacting to specific data changes, often for side effects like localStorage
   watch: {
     stayOpenAfterSignup(val) {
       localStorage.setItem("stayOpenAfterSignup", val);
@@ -111,6 +113,65 @@ Vue.createApp({
       localStorage.setItem("autoAddToMonitor", val);
     },
   },
+
+  // -- Lifecycle Hooks ---
+  // Code to run at specific points in the component's lifecycle
+  async created() {
+    await this.fetchConfig();
+    await this.loadAPIEvents();
+  },
+
+  async mounted() {
+    this.updateDateTime();
+    setInterval(this.updateDateTime, 1000);
+
+    const url = new URL(location.href);
+    const params = url.searchParams;
+    const account = params.has("acct")
+      ? params.get("acct")
+      : localStorage.getItem("account");
+    const password = params.has("pw")
+      ? params.get("pw")
+      : localStorage.getItem("password");
+
+    if (account && password) {
+      this.authenticated = false;
+      this.account = account;
+      this.password = password;
+      await this.fetchConfig();
+      await this.loadAPIEvents();
+      await this.authenticate();
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        this.syncMonitorData();
+        this.startSyncInterval();
+      } else {
+        this.stopSyncInterval();
+      }
+    });
+
+    setInterval(async () => {
+      if (!document.hidden) {
+        await this.syncMonitorData();
+      }
+    }, 3000);
+
+    globalThis.addEventListener("scroll", this.handleScroll);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener(
+      "visibilitychange",
+      this.handleVisibilityChange,
+    );
+    this.stopSyncInterval();
+    globalThis.removeEventListener("scroll", this.handleScroll);
+  },
+
+  // --- Methods ---
+  // Actions triggered by user interactions or internal logic
   methods: {
     async fetchConfig() {
       try {
@@ -862,52 +923,5 @@ Vue.createApp({
         "0" + d.getDate()
       ).slice(-2)}`;
     },
-  },
-  async mounted() {
-    this.updateDateTime();
-    setInterval(this.updateDateTime, 1000);
-
-    const url = new URL(location.href);
-    const params = url.searchParams;
-    const account = params.has("acct")
-      ? params.get("acct")
-      : localStorage.getItem("account");
-    const password = params.has("pw")
-      ? params.get("pw")
-      : localStorage.getItem("password");
-
-    if (account && password) {
-      this.authenticated = false;
-      this.account = account;
-      this.password = password;
-      await this.fetchConfig();
-      await this.loadAPIEvents();
-      await this.authenticate();
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        this.syncMonitorData();
-        this.startSyncInterval();
-      } else {
-        this.stopSyncInterval();
-      }
-    });
-
-    setInterval(async () => {
-      if (!document.hidden) {
-        await this.syncMonitorData();
-      }
-    }, 3000);
-
-    globalThis.addEventListener("scroll", this.handleScroll);
-  },
-  beforeUnmount() {
-    document.removeEventListener(
-      "visibilitychange",
-      this.handleVisibilityChange,
-    );
-    this.stopSyncInterval();
-    globalThis.removeEventListener("scroll", this.handleScroll);
   },
 }).mount("#app");
