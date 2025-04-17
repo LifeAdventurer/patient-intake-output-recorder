@@ -12,8 +12,8 @@ Vue.createApp({
   data() {
     return {
       // --- Core State ---
-      account: "",
-      password: "",
+      account: localStorage.getItem("account") || "",
+      password: localStorage.getItem("password") || "",
       authenticated: false,
       apiUrl: "",
       webUrl: "",
@@ -138,14 +138,9 @@ Vue.createApp({
     this.updateDateTime();
     setInterval(this.updateDateTime, 1000);
 
-    const url = new URL(location.href);
-    const params = url.searchParams;
-    const account = params.has("acct")
-      ? params.get("acct")
-      : localStorage.getItem("account");
-    const password = params.has("pw")
-      ? params.get("pw")
-      : localStorage.getItem("password");
+    const urlParams = new URLSearchParams(window.location.search);
+    const account = urlParams.get("acct");
+    const password = urlParams.get("pw");
 
     if (account && password) {
       this.authenticated = false;
