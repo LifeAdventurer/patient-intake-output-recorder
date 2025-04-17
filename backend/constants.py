@@ -8,6 +8,12 @@ API_URL = config.get("api_url", "")
 if not API_URL:
     raise ValueError("api_url is not set in the config file")
 
+with open("./limits.json") as file:
+    limits = json.load(file)
+    for value in limits.values():
+        assert isinstance(value, int)
+        assert int(value) > 0
+
 API_PORT = 8000
 FRONTEND_PORT = 5500
 

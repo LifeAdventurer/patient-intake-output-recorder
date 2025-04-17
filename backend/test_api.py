@@ -249,21 +249,22 @@ class TestAPIEndpoints(unittest.TestCase):
         today = date.today()
         key = f"{today.year}_{today.month}_{today.day}"
         display_date = f"{today.month}/{today.day}"
+        now_time = datetime.now().strftime("%H:%M")
+        valid_data = {
+            "time": now_time,
+            "food": 100,
+            "water": 200,
+            "urination": 1,
+            "defecation": 0,
+        }
+
         update_data = {
             "isEditing": False,
             "limitAmount": "",
             "foodCheckboxChecked": False,
             "waterCheckboxChecked": False,
             key: {
-                "data": [
-                    {
-                        "time": datetime.now().strftime("%H:%M"),
-                        "food": 100,
-                        "water": 200,
-                        "urination": 1,
-                        "defecation": 0,
-                    }
-                ],
+                "data": [valid_data],
                 "count": 1,
                 "recordDate": display_date,
                 "foodSum": 100,
@@ -275,6 +276,7 @@ class TestAPIEndpoints(unittest.TestCase):
         }
 
         mocked_load_json_file.data["patientX"] = {}
+
         res = client.post(
             "/",
             json={
@@ -287,20 +289,8 @@ class TestAPIEndpoints(unittest.TestCase):
         )
         self.assertEqual(res.json()["message"], UPDATE_RECORD_SUCCESS)
 
-        res = client.post(
-            "/",
-            json={
-                "event": FETCH_RECORD,
-                "account": "patientX",
-                "password": "def456",
-                "patient": "patientX",
-            },
-        )
-        self.assertEqual(res.json()["message"], FETCH_RECORD_SUCCESS)
-
-        future = date.today().replace(year=today.year + 1)
-        invalid_key = f"{future.year}_{future.month}_{future.day}"
-        update_data[invalid_key] = update_data[key]
+        future_key = f"{today.year + 1}_{today.month}_{today.day}"
+        update_data[future_key] = update_data[key]
         res = client.post(
             "/",
             json={
@@ -312,7 +302,134 @@ class TestAPIEndpoints(unittest.TestCase):
             },
         )
         self.assertIn("Invalid record format", res.json()["message"])
-        update_data.pop(invalid_key)
+        update_data.pop(future_key)
+
+        update_data[key]["recordDate"] = "1/1"
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+        update_data[key]["recordDate"] = display_date
+
+        update_data[key]["recordDate"] = f"{today.month}/{today.day + 1}"
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+        update_data[key]["recordDate"] = display_date
+
+        update_data[key]["foodSum"] = 99999
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+        update_data[key]["foodSum"] = 100
+
+        update_data[key]["weight"] = "301 kg"
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+        update_data[key]["weight"] = "53.12 kg"
+
+        update_data[key]["weight"] = "-123 kg"
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+        update_data[key]["weight"] = "53.12 kg"
+
+        update_data[key]["weight"] = "??? kg"
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+        update_data[key]["weight"] = "53.12 kg"
+
+        update_data[key]["weight"] = "NaNN"
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+        update_data[key]["weight"] = "53.12 kg"
+
+        future_time = (datetime.now().replace(hour=23, minute=59)).strftime(
+            "%H:%M"
+        )
+        update_data[key]["data"][0]["time"] = future_time
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertIn("Invalid record format", res.json()["message"])
+
+        update_data[key]["data"][0]["time"] = now_time
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_RECORD,
+                "account": "patientX",
+                "password": "def456",
+                "patient": "patientX",
+                "data": update_data,
+            },
+        )
+        self.assertEqual(res.json()["message"], UPDATE_RECORD_SUCCESS)
 
         res = client.post(
             "/",

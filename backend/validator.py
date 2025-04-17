@@ -2,6 +2,7 @@ from datetime import date, datetime
 from datetime import time as time_cls
 from typing import Any
 
+from constants import limits
 from pydantic import (
     BaseModel,
     Field,
@@ -66,6 +67,12 @@ class DailyRecord(BaseModel):
                     f"{field}Sum expected {expected}, got {actual}"
                 )
 
+            max_limit = limits.get(f"{field}Sum")
+            if actual > max_limit:
+                raise ValueError(
+                    f"{field}Sum {actual} exceeds max limit {max_limit}"
+                )
+
         record_date = parse_record_date(self.recordDate)
         if record_date > date.today():
             raise ValueError(f"recordDate is in the future: {self.recordDate}")
@@ -82,6 +89,12 @@ class DailyRecord(BaseModel):
             weight_val = float(weight_val)
             if weight_val <= 0:
                 raise ValueError("weight must be a positive floating number")
+
+            max_weight = limits.get("weight")
+            if weight_val > max_weight:
+                raise ValueError(
+                    f"weight {weight_val} exceeds max limit {max_weight}"
+                )
 
         for record in self.data:
             if record_date < date.today():
