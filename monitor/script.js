@@ -86,19 +86,21 @@ Vue.createApp({
   // --- Computed Properties ---
   // Used for deriving data reactively from the main state
   computed: {
+    // Returns patient records with date keys reversed for display (newest first)
+    // Filters out the special 'keysToFilter' properties
     reversedPatientRecords() {
       const reversedData = {};
-      Object.keys(this.patientRecords).forEach((patientAccount) => {
+      for (const patientAccount in this.patientRecords) {
+        const patientData = this.patientRecords[patientAccount];
         const reversedRecord = {};
-        Object.keys(this.patientRecords[patientAccount])
-          .reverse()
+        Object.keys(patientData)
+          .filter((key) => !this.keysToFilter.hasOwnProperty(key)) // Filter out control keys
+          .sort((a, b) => b.localeCompare(a)) // Sort keys descending (latest date first)
           .forEach((key) => {
-            if (!(key in this.keysToFilter)) {
-              reversedRecord[key] = this.patientRecords[patientAccount][key];
-            }
+            reversedRecord[key] = patientData[key];
           });
         reversedData[patientAccount] = reversedRecord;
-      });
+      }
       return reversedData;
     },
   },
