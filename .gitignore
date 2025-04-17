@@ -9,3 +9,5 @@ config.json
 docs/note.md
 
 site/
+
+*.diff
