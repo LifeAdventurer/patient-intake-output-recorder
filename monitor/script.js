@@ -130,25 +130,36 @@ Vue.createApp({
   // --- Lifecycle Hooks ---
   // Code to run at specific points in the component's lifecycle
   async created() {
+    // Fetch essential config before doing anything else
     await this.fetchConfig();
     await this.loadAPIEvents();
+
+    // Attempt initial authentication if credentials exist
+    if (this.account && this.password) {
+      await this.authenticate(); // This will fetch data if successful
+    }
+
+    // Set up date/time updates
+    this.updateDateTime();
+    setInterval(this.updateDateTime, 1000);
   },
 
   async mounted() {
-    this.updateDateTime();
-    setInterval(this.updateDateTime, 1000);
-
     const urlParams = new URLSearchParams(window.location.search);
-    const account = urlParams.get("acct");
-    const password = urlParams.get("pw");
+    const urlAccount = urlParams.get("acct");
+    const urlPassword = urlParams.get("pw");
 
-    if (account && password) {
-      this.authenticated = false;
-      this.account = account;
-      this.password = password;
-      await this.fetchConfig();
-      await this.loadAPIEvents();
-      await this.authenticate();
+    if (
+      urlAccount &&
+      urlPassword &&
+      (!this.authenticated || this.account !== urlAccount)
+    ) {
+      this.account = urlAccount;
+      this.password = urlPassword;
+      // Clear local storage if using URL params
+      localStorage.removeItem("account");
+      localStorage.removeItem("password");
+      await this.authenticate(); // Re-authenticate with URL params
     }
 
     document.addEventListener("visibilitychange", () => {
