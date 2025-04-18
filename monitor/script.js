@@ -197,6 +197,7 @@ Vue.createApp({
         console.error("Failed to load config", error);
       }
     },
+
     async loadAPIEvents() {
       try {
         const response = await fetch("./events.json");
@@ -205,39 +206,21 @@ Vue.createApp({
         console.error("Failed to load events", error);
       }
     },
-    togglePasswordVisibility() {
-      this.showPassword = !this.showPassword;
-    },
-    showAlert(message, type = "success") {
-      this.bootstrapAlertMessage = message;
-      this.bootstrapAlertClass =
-        type === "success" ? "alert-success" : "alert-danger";
 
-      setTimeout(() => {
-        this.bootstrapAlertMessage = "";
-      }, 3000);
+    updateDateTime() {
+      const d = new Date();
+      const dayOfWeek = ["日", "一", "二", "三", "四", "五", "六"];
+      this.currentDate = `${d.getFullYear()}.${d.getMonth() + 1}.${(
+        "0" + d.getDate()
+      ).slice(-2)} (${dayOfWeek[d.getDay()]})`;
+      this.currentTime = `${("0" + d.getHours()).slice(-2)}:${(
+        "0" + d.getMinutes()
+      ).slice(-2)}:${("0" + d.getSeconds()).slice(-2)}`;
+      this.currentDateYY_MM_DD = `${d.getFullYear()}_${d.getMonth() + 1}_${(
+        "0" + d.getDate()
+      ).slice(-2)}`;
     },
-    showConfirm(message) {
-      this.confirmMessage = message;
 
-      return new Promise((resolve) => {
-        this.confirmResolver = resolve;
-
-        const confirmModal = document.getElementById("confirmModal");
-        const modal = new bootstrap.Modal(confirmModal);
-        modal.show();
-      });
-    },
-    handleConfirm(result) {
-      const confirmModal = document.getElementById("confirmModal");
-      const modal = bootstrap.Modal.getInstance(confirmModal);
-      modal.hide();
-
-      if (this.confirmResolver) {
-        this.confirmResolver(result);
-        this.confirmResolver = null;
-      }
-    },
     async postRequest(payload) {
       try {
         const response = await fetch(this.apiUrl, {
@@ -260,6 +243,56 @@ Vue.createApp({
       } catch (error) {
         throw new Error(error.message);
       }
+    },
+
+    async authenticate() {
+      const fetchedData = await this.postRequest({
+        event: this.events.FETCH_MONITORING_PATIENTS,
+        account: this.account,
+        password: this.password,
+      });
+      if (Object.hasOwn(fetchedData, "message")) {
+        switch (fetchedData.message) {
+          case this.events.messages.ACCT_NOT_EXIST:
+            this.showAlert("帳號不存在", "alert-danger");
+            this.account = "";
+            this.password = "";
+            break;
+          case this.events.messages.AUTH_FAIL_PASSWORD:
+            this.showAlert("密碼錯誤", "alert-danger");
+            this.password = "";
+            break;
+          case this.events.messages.INVALID_ACCT_TYPE:
+            this.showAlert("此帳號沒有管理權限", "alert-danger");
+            this.account = "";
+            this.password = "";
+            break;
+          default:
+            this.authenticated = true;
+            localStorage.setItem("account", this.account);
+            localStorage.setItem("password", this.password);
+
+            this.processFetchedData(fetchedData);
+            await this.fetchUnmonitoredPatients();
+            this.filterPatients();
+            this.setupSync(); // Start syncing data
+        }
+      }
+    },
+
+    async confirmLogout() {
+      const confirmed = await this.showConfirm("請確認是否要登出");
+      if (confirmed) {
+        this.account = "";
+        this.password = "";
+        this.authenticated = false;
+        localStorage.removeItem("account");
+        localStorage.removeItem("password");
+      }
+    },
+
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
     },
 
     // --- Data Synchronization & Processing ---
@@ -292,6 +325,7 @@ Vue.createApp({
         this.updateRestrictionText(patientAccount);
       });
     },
+
     async syncMonitorData() {
       if (!this.authenticated) return;
       if (
@@ -363,6 +397,7 @@ Vue.createApp({
         console.error("Error:", message);
       }
     },
+
     async fetchUnmonitoredPatients() {
       const payload = {
         event: this.events.FETCH_UNMONITORED_PATIENTS,
@@ -546,40 +581,6 @@ Vue.createApp({
         console.error(message);
       }
     },
-    async authenticate() {
-      const fetchedData = await this.postRequest({
-        event: this.events.FETCH_MONITORING_PATIENTS,
-        account: this.account,
-        password: this.password,
-      });
-      if (Object.hasOwn(fetchedData, "message")) {
-        switch (fetchedData.message) {
-          case this.events.messages.ACCT_NOT_EXIST:
-            this.showAlert("帳號不存在", "alert-danger");
-            this.account = "";
-            this.password = "";
-            break;
-          case this.events.messages.AUTH_FAIL_PASSWORD:
-            this.showAlert("密碼錯誤", "alert-danger");
-            this.password = "";
-            break;
-          case this.events.messages.INVALID_ACCT_TYPE:
-            this.showAlert("此帳號沒有管理權限", "alert-danger");
-            this.account = "";
-            this.password = "";
-            break;
-          default:
-            this.authenticated = true;
-            localStorage.setItem("account", this.account);
-            localStorage.setItem("password", this.password);
-
-            this.processFetchedData(fetchedData);
-            await this.fetchUnmonitoredPatients();
-            this.filterPatients();
-            this.setupSync(); // Start syncing data
-        }
-      }
-    },
     async signUpPatient() {
       this.signUpPatientSubmitted = true;
 
@@ -637,19 +638,6 @@ Vue.createApp({
       // console.log("Filtered accounts:", this.filteredPatientAccounts);
     }, 200), // 200ms debounce delay
 
-    getFirstAndLastDates(patientAccount) {
-      const keys = Object.keys(this.patientRecords[patientAccount]).filter(
-        (key) => {
-          return !(key in this.keysToFilter);
-        },
-      );
-      if (keys.length === 0) {
-        return "無紀錄";
-      }
-      const firstDate = keys[0].replace(/_/g, "/");
-      const lastDate = keys[keys.length - 1].replace(/_/g, "/");
-      return `${firstDate} ~ ${lastDate}`;
-    },
     openQrCodeModal(index) {
       const account = this.filteredPatientAccounts[index];
       const [patient, patient_password] =
@@ -872,42 +860,6 @@ Vue.createApp({
         this.patientRecords[patientAccount]["limitAmount"] = intValue;
       }
     },
-    getFoodSumColor(patientAccount) {
-      let exceed = false;
-      const patientRecord = this.patientRecords[patientAccount];
-      if (patientRecord["foodCheckboxChecked"]) {
-        exceed =
-          patientRecord[this.currentDateYY_MM_DD]["foodSum"] +
-            (patientRecord["waterCheckboxChecked"]
-              ? patientRecord[this.currentDateYY_MM_DD]["waterSum"]
-              : 0) >
-          patientRecord["limitAmount"];
-      }
-      return exceed ? "red" : "inherit";
-    },
-    getWaterSumColor(patientAccount) {
-      let exceed = false;
-      const patientRecord = this.patientRecords[patientAccount];
-      if (patientRecord["waterCheckboxChecked"]) {
-        exceed =
-          patientRecord[this.currentDateYY_MM_DD]["waterSum"] +
-            (patientRecord["foodCheckboxChecked"]
-              ? patientRecord[this.currentDateYY_MM_DD]["foodSum"]
-              : 0) >
-          patientRecord["limitAmount"];
-      }
-      return exceed ? "red" : "inherit";
-    },
-    async confirmLogout() {
-      const confirmed = await this.showConfirm("請確認是否要登出");
-      if (confirmed) {
-        this.account = "";
-        this.password = "";
-        this.authenticated = false;
-        localStorage.removeItem("account");
-        localStorage.removeItem("password");
-      }
-    },
     async removeRecord(target, patientAccount) {
       this.confirming = true;
       const [date, index] = target.attributes.id.textContent.split("-");
@@ -939,27 +891,91 @@ Vue.createApp({
       }
       this.confirming = false;
     },
+
+    showAlert(message, type = "success") {
+      this.bootstrapAlertMessage = message;
+      this.bootstrapAlertClass =
+        type === "success" ? "alert-success" : "alert-danger";
+
+      setTimeout(() => {
+        this.bootstrapAlertMessage = "";
+      }, 3000);
+    },
+
+    showConfirm(message) {
+      this.confirmMessage = message;
+
+      return new Promise((resolve) => {
+        this.confirmResolver = resolve;
+
+        const confirmModal = document.getElementById("confirmModal");
+        const modal = new bootstrap.Modal(confirmModal);
+        modal.show();
+      });
+    },
+
+    handleConfirm(result) {
+      const confirmModal = document.getElementById("confirmModal");
+      const modal = bootstrap.Modal.getInstance(confirmModal);
+      modal.hide();
+
+      if (this.confirmResolver) {
+        this.confirmResolver(result);
+        this.confirmResolver = null;
+      }
+    },
+
+    getFirstAndLastDates(patientAccount) {
+      const keys = Object.keys(this.patientRecords[patientAccount]).filter(
+        (key) => {
+          return !(key in this.keysToFilter);
+        },
+      );
+      if (keys.length === 0) {
+        return "無紀錄";
+      }
+      const firstDate = keys[0].replace(/_/g, "/");
+      const lastDate = keys[keys.length - 1].replace(/_/g, "/");
+      return `${firstDate} ~ ${lastDate}`;
+    },
+
+    getFoodSumColor(patientAccount) {
+      let exceed = false;
+      const patientRecord = this.patientRecords[patientAccount];
+      if (patientRecord["foodCheckboxChecked"]) {
+        exceed =
+          patientRecord[this.currentDateYY_MM_DD]["foodSum"] +
+            (patientRecord["waterCheckboxChecked"]
+              ? patientRecord[this.currentDateYY_MM_DD]["waterSum"]
+              : 0) >
+          patientRecord["limitAmount"];
+      }
+      return exceed ? "red" : "inherit";
+    },
+
+    getWaterSumColor(patientAccount) {
+      let exceed = false;
+      const patientRecord = this.patientRecords[patientAccount];
+      if (patientRecord["waterCheckboxChecked"]) {
+        exceed =
+          patientRecord[this.currentDateYY_MM_DD]["waterSum"] +
+            (patientRecord["foodCheckboxChecked"]
+              ? patientRecord[this.currentDateYY_MM_DD]["foodSum"]
+              : 0) >
+          patientRecord["limitAmount"];
+      }
+      return exceed ? "red" : "inherit";
+    },
+
     scrollToTop() {
       globalThis.scrollTo({
         top: 0,
         behavior: "smooth",
       });
     },
+
     handleScroll() {
       this.showScrollButton = globalThis.scrollY > 20;
-    },
-    updateDateTime() {
-      const d = new Date();
-      const dayOfWeek = ["日", "一", "二", "三", "四", "五", "六"];
-      this.currentDate = `${d.getFullYear()}.${d.getMonth() + 1}.${(
-        "0" + d.getDate()
-      ).slice(-2)} (${dayOfWeek[d.getDay()]})`;
-      this.currentTime = `${("0" + d.getHours()).slice(-2)}:${(
-        "0" + d.getMinutes()
-      ).slice(-2)}:${("0" + d.getSeconds()).slice(-2)}`;
-      this.currentDateYY_MM_DD = `${d.getFullYear()}_${d.getMonth() + 1}_${(
-        "0" + d.getDate()
-      ).slice(-2)}`;
     },
   },
 }).mount("#app");
