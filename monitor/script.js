@@ -1006,25 +1006,56 @@ Vue.createApp({
 
     showConfirm(message) {
       this.confirmMessage = message;
+      this.confirming = true; // Set falg while modal is potentially visible
 
       return new Promise((resolve) => {
-        this.confirmResolver = resolve;
+        this.confirmResolver = resolve; // Store the resolver function
 
-        const confirmModal = document.getElementById("confirmModal");
-        const modal = new bootstrap.Modal(confirmModal);
-        modal.show();
+        const modalElement = document.getElementById("confirmModal");
+        if (modalElement) {
+          // Ensure previous instances are handled if necessary, or just use getOrCreateInstance
+          const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+          // Add event listeners for modal close events to resolve promise as false
+          const handleModalClose = () => {
+            // console.log("Confirm modal hidden/closed.");
+            if (this.confirmResolver) {
+              this.confirmResolver(false); // Resolve false if closed without button click
+              this.confirmResolver = null;
+            }
+            this.confirming = false; // Reset flag when modal is fully hidden
+            // Clean up listeners
+            modalElement.removeEventListener(
+              "hidden.bs.modal",
+              handleModalClose,
+            );
+          };
+          // Use 'hidden.bs.modal' which fires after the modal is fully hidden
+          modalElement.addEventListener("hidden.bs.modal", handleModalClose, {
+            once: true,
+          });
+
+          modal.show();
+        } else {
+          console.error("Confirm modal element not found.");
+          resolve(false); // Resolve false immediately if modal can't be shown
+          this.confirming = false;
+        }
       });
     },
 
+    /** Handles the result from teh confirmation modal button */
     handleConfirm(result) {
-      const confirmModal = document.getElementById("confirmModal");
-      const modal = bootstrap.Modal.getInstance(confirmModal);
-      modal.hide();
-
+      // No need to manually hide the modal here if data-bs-dismiss="modal" is used on buttons.
+      // The 'hidden.bs.modal' listener in showConfirm handles the closing case.
       if (this.confirmResolver) {
-        this.confirmResolver(result);
-        this.confirmResolver = null;
+        this.confirmResolver(result); // Resolve the promise with the button result (true/false)
+        this.confirmResolver = null; // Clear resolver
+      } else {
+        // This case might happen if teh modal was closed forecfully before a button was clikced
+        console.warn("Confirm button clicked, but no active resolver found.");
       }
+      // The 'confirming' flag is reset by the 'hidden.bs.modal' listener.
     },
 
     getFirstAndLastDates(patientAccount) {

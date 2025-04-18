@@ -785,8 +785,8 @@
                 {{ confirmMessage }}
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @click="handleConfirm(false)">取消</button>
-                <button type="button" class="btn btn-danger" @click="handleConfirm(true)">確認</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="handleConfirm(false)">取消</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" @click="handleConfirm(true)">確認</button>
               </div>
             </div>
           </div>
