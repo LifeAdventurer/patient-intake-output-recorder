@@ -210,15 +210,17 @@ Vue.createApp({
     updateDateTime() {
       const d = new Date();
       const dayOfWeek = ["日", "一", "二", "三", "四", "五", "六"];
-      this.currentDate = `${d.getFullYear()}.${d.getMonth() + 1}.${(
-        "0" + d.getDate()
-      ).slice(-2)} (${dayOfWeek[d.getDay()]})`;
-      this.currentTime = `${("0" + d.getHours()).slice(-2)}:${(
-        "0" + d.getMinutes()
-      ).slice(-2)}:${("0" + d.getSeconds()).slice(-2)}`;
-      this.currentDateYY_MM_DD = `${d.getFullYear()}_${d.getMonth() + 1}_${(
-        "0" + d.getDate()
-      ).slice(-2)}`;
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1; // JS months are 0-indexed
+      const day = ("0" + d.getDate()).slice(-2);
+      const hours = ("0" + d.getHours()).slice(-2);
+      const minutes = ("0" + d.getMinutes()).slice(-2);
+      const seconds = ("0" + d.getSeconds()).slice(-2);
+
+      this.currentDate = `${year}.${month}.${day} (${dayOfWeek[d.getDay()]})`;
+      this.currentTime = `${hours}:${minutes}:${seconds}`;
+      // Consistent key format, ensuring month is not zero-padded if single digit
+      this.currentDateYY_MM_DD = `${year}_${month}_${day}`;
     },
 
     async postRequest(payload) {
