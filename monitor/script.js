@@ -348,10 +348,16 @@ Vue.createApp({
     },
 
     async confirmLogout() {
-      const confirmed = await this.showConfirm("請確認是否要登出");
+      const confirmed = await this.showConfirm("請確認是否要登出?");
       if (confirmed) {
+        console.log("Logging out user:", this.account);
         this.authenticated = false;
         this.resetCredentials();
+        this.patientRecords = {};
+        this.patientAccountsWithPasswords = [];
+        this.unmonitoredPatients = [];
+        this.filteredPatientAccounts = [];
+        this.stopSyncInterval(); // Stop syncing on logout
       }
     },
 
