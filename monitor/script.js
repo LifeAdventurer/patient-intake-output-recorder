@@ -277,38 +277,70 @@ Vue.createApp({
       }
     },
 
+    // --- Authentication ---
     async authenticate() {
-      const fetchedData = await this.postRequest({
-        event: this.events.FETCH_MONITORING_PATIENTS,
-        account: this.account,
-        password: this.password,
-      });
-      if (Object.hasOwn(fetchedData, "message")) {
-        switch (fetchedData.message) {
-          case this.events.messages.ACCT_NOT_EXIST:
-            this.showAlert("帳號不存在", "alert-danger");
-            this.account = "";
-            this.password = "";
-            break;
-          case this.events.messages.AUTH_FAIL_PASSWORD:
-            this.showAlert("密碼錯誤", "alert-danger");
-            this.password = "";
-            break;
-          case this.events.messages.INVALID_ACCT_TYPE:
-            this.showAlert("此帳號沒有管理權限", "alert-danger");
-            this.account = "";
-            this.password = "";
-            break;
-          default:
-            this.authenticated = true;
-            localStorage.setItem("account", this.account);
-            localStorage.setItem("password", this.password);
+      if (!this.account || !this.password) {
+        this.showAlert("請輸入帳號和密碼。", "alert-danger");
+        return;
+      }
+      console.log("Attempting authentication for:", this.account);
 
-            this.processFetchedData(fetchedData);
-            await this.fetchUnmonitoredPatients();
-            this.filterPatients();
-            this.setupSync(); // Start syncing data
+      try {
+        const payload = {
+          event: this.events.FETCH_MONITORING_PATIENTS,
+          account: this.account,
+          password: this.password,
+        };
+        const fetchedData = await this.postRequest(payload);
+
+        if (
+          fetchedData.message &&
+          fetchedData.message !==
+            this.events.messages.FETCH_MONITORING_PATIENTS_SUCCESS
+        ) {
+          switch (fetchedData.message) {
+            case this.events.messages.ACCT_NOT_EXIST:
+              this.showAlert("帳號不存在", "alert-danger");
+              this.account = "";
+              this.password = "";
+              break;
+            case this.events.messages.AUTH_FAIL_PASSWORD:
+              this.showAlert("密碼錯誤", "alert-danger");
+              this.password = ""; // Clear only password
+              break;
+            case this.events.messages.INVALID_ACCT_TYPE:
+              this.showAlert("此帳號沒有管理權限", "alert-danger");
+              this.account = "";
+              this.password = "";
+              break;
+            default:
+              // Handle other potential non-success messages
+              this.showAlert(
+                `驗證失敗: ${fetchedData.message}`,
+                "alert-danger",
+              );
+              this.account = "";
+              this.password = "";
+          }
+          this.authenticated = false;
+        } else {
+          // Authentication Success
+          this.authenticated = true;
+          localStorage.setItem("account", this.account);
+          localStorage.setItem("password", this.password);
+
+          this.processFetchedData(fetchedData);
+          await this.fetchUnmonitoredPatients(); // Fetch unmonitored list
+          this.filterPatients(); // Initial filter after getting data
+          this.setupSync(); // Start syncing data
         }
+      } catch (error) {
+        console.error("Authentication failed:", error);
+        this.showAlert(`登入時發生錯誤: ${error.message}`, "alert-danger");
+        this.authenticated = false;
+        // Consider reset credentials on network/other errors too
+        // this.account = "";
+        // this.password = "";
       }
     },
 
