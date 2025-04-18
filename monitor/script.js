@@ -502,6 +502,244 @@ Vue.createApp({
         console.error(message);
       }
     },
+    async removePatientFromMonitor(patient) {
+      const [_, patient_password] = this.patientAccountsWithPasswords.find(
+        (p) => p[0] === patient,
+      );
+
+      const payload = {
+        event: this.events.REMOVE_PATIENT,
+        account: this.account,
+        password: this.password,
+        patient,
+        patient_password: patient_password,
+      };
+
+      const { message } = await this.postRequest(payload);
+
+      if (message === this.events.messages.REMOVE_PATIENT_SUCCESS) {
+        // TODO: Remove this console.log
+        console.log(message);
+
+        await this.syncMonitorData();
+      } else {
+        console.error(message);
+      }
+    },
+
+    async deletePatient(patient) {
+      const confirmed = await this.showConfirm(
+        `請確認病患: ${patient} 是否要出院?`,
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      const [_, patient_password] = this.patientAccountsWithPasswords.find(
+        (p) => p[0] === patient,
+      );
+
+      const payload = {
+        event: this.events.DELETE_PATIENT,
+        account: this.account,
+        password: this.password,
+        patient,
+        patient_password: patient_password,
+      };
+
+      const { message } = await this.postRequest(payload);
+
+      if (message === this.events.messages.DELETE_PATIENT_SUCCESS) {
+        // TODO: Remove this console.log
+        console.log(message);
+
+        // Refresh lists thoroughly
+        await this.syncMonitorData();
+      } else {
+        console.error(message);
+      }
+    },
+
+    async clearPatientData(patient, needConfirm = true) {
+      if (needConfirm) {
+        const confirmed = await this.showConfirm(
+          `確定要清除 ${patient} 的所有資料嗎?此操作無法還原。`,
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      try {
+        await this.updateRecords(patient, this.keysToFilter);
+        this.showAlert(`已成功清除 ${patient} 的所有資料`);
+      } catch (error) {
+        console.error("Failed to clear patient data:", error);
+        this.showAlert(`清除 ${patient} 的資料時發生錯誤`, "alert-danger");
+      }
+    },
+
+    // --- Search & Filtering ---
+    // Debounced method to filter patient list based on searchQuery
+    filterPatients: debounce(function () {
+      const query = this.searchQuery.trim().toLowerCase();
+      if (query === "") {
+        this.filteredPatientAccounts = this.monitoredPatientAccounts;
+      } else {
+        this.filteredPatientAccounts = this.monitoredPatientAccounts.filter(
+          (account) => account.toLowerCase().includes(query),
+        );
+      }
+      // console.log("Filtered accounts:", this.filteredPatientAccounts);
+    }, 200), // 200ms debounce delay
+
+    async toggleRecordEdit(target, patientAccount) {
+      const [date, recordIndex] = target.attributes.id.textContent.split("-");
+      const record =
+        this.patientRecords[patientAccount][date]["data"][recordIndex];
+      if (this.editingRecordIndex === -1) {
+        this.editingRecordIndex = parseInt(recordIndex);
+        this.editingRecordPatientAccount = patientAccount;
+        for (const dietaryItem of this.dietaryItems) {
+          this.tempPatientRecord[dietaryItem] = record[dietaryItem];
+        }
+      } else {
+        this.editingRecordIndex = -1;
+        this.editingRecordPatientAccount = "";
+        for (const dietaryItem of this.dietaryItems) {
+          if (record[dietaryItem] === "") {
+            record[dietaryItem] = 0;
+          }
+          this.patientRecords[patientAccount][date][`${dietaryItem}Sum`] +=
+            record[dietaryItem] - this.tempPatientRecord[dietaryItem];
+        }
+        await this.updateRecords(patientAccount);
+        if (
+          this.dietaryItems.every((dietaryItem) => record[dietaryItem] === 0)
+        ) {
+          await this.removeRecord(target, patientAccount);
+        }
+      }
+    },
+
+    async removeRecord(target, patientAccount) {
+      this.confirming = true;
+      const [date, index] = target.attributes.id.textContent.split("-");
+      const record = this.patientRecords[patientAccount][date]["data"][index];
+      const confirmMessageLines = [
+        "請確認是否移除這筆資料:",
+        `床號: ${patientAccount}`,
+        `日期: ${date.replaceAll("_", "/")}`,
+        `時間: ${record["time"]}`,
+        `進食: ${record["food"]}`,
+        `喝水: ${record["water"]}`,
+        `排尿: ${record["urination"]}`,
+        `排便: ${record["defecation"]}`,
+      ];
+      const confirmMessage = confirmMessageLines.join("\n");
+      const confirmed = await this.showConfirm(confirmMessage);
+      if (confirmed) {
+        this.removingRecord = true;
+
+        this.patientRecords[patientAccount][date]["count"] -= 1;
+        for (const dietaryItem of this.dietaryItems) {
+          this.patientRecords[patientAccount][date][`${dietaryItem}Sum`] -=
+            record[dietaryItem];
+        }
+        this.patientRecords[patientAccount][date]["data"].splice(index, 1);
+
+        await this.updateRecords(patientAccount);
+        this.removingRecord = false;
+      }
+      this.confirming = false;
+    },
+
+    // --- Restriction Editing ---
+    updateRestrictionText(patientAccount) {
+      const limitAmount = String(
+        this.patientRecords[patientAccount]["limitAmount"],
+      ).trim();
+      if (!isNaN(limitAmount) && limitAmount !== "") {
+        let text;
+        if (
+          this.patientRecords[patientAccount]["foodCheckboxChecked"] &&
+          this.patientRecords[patientAccount]["waterCheckboxChecked"]
+        ) {
+          text = `限制進食加喝水不超過${
+            this.patientRecords[patientAccount]["limitAmount"]
+          }公克`;
+        } else if (this.patientRecords[patientAccount]["foodCheckboxChecked"]) {
+          text = `限制進食不超過${
+            this.patientRecords[patientAccount]["limitAmount"]
+          }公克`;
+        } else if (
+          this.patientRecords[patientAccount]["waterCheckboxChecked"]
+        ) {
+          text = `限制喝水不超過${
+            this.patientRecords[patientAccount]["limitAmount"]
+          }公克`;
+        }
+        this.restrictionText[patientAccount] = text;
+      } else {
+        this.restrictionText[patientAccount] = "";
+      }
+    },
+
+    handleInput(value, patientAccount) {
+      const intValue = parseInt(value);
+      if (!isNaN(intValue)) {
+        this.patientRecords[patientAccount]["limitAmount"] = intValue;
+      }
+    },
+
+    toggleRestrictionEdit(patientAccount) {
+      const limitAmount = String(
+        this.patientRecords[patientAccount]["limitAmount"],
+      ).trim();
+      if (this.patientRecords[patientAccount]["isEditing"]) {
+        if (
+          !this.patientRecords[patientAccount]["foodCheckboxChecked"] &&
+          !this.patientRecords[patientAccount]["waterCheckboxChecked"]
+        ) {
+          if (isNaN(limitAmount)) {
+            this.showAlert("請勾選選項並輸入數字", "alert-danger");
+            return;
+          } else if (limitAmount !== "") {
+            this.showAlert("請勾選選項", "alert-danger");
+            return;
+          }
+        } else if (isNaN(limitAmount) || limitAmount === "") {
+          this.showAlert("請輸入數字", "alert-danger");
+          return;
+        } else if (limitAmount.startsWith("-") || limitAmount.startsWith(".")) {
+          this.showAlert("請輸入正整數", "alert-danger");
+          return;
+        }
+      }
+      this.patientRecords[patientAccount]["isEditing"] =
+        !this.patientRecords[patientAccount]["isEditing"];
+      if (!this.patientRecords[patientAccount]["isEditing"]) {
+        if (limitAmount !== "") {
+          this.updateRestrictionText(patientAccount);
+          this.currentEditingPatient = "";
+        }
+        this.updateRecords(patientAccount);
+        this.isEditingRestriction = false;
+      } else {
+        this.isEditingRestriction = true;
+        if (
+          this.currentEditingPatient !== "" &&
+          patientAccount !== this.currentEditingPatient
+        ) {
+          this.patientRecords[this.currentEditingPatient]["isEditing"] = false;
+          this.updateRestrictionText(this.currentEditingPatient);
+          this.updateRecords(this.currentEditingPatient);
+        }
+        this.currentEditingPatient = patientAccount;
+      }
+    },
+
+    // --- Data Transfer ---
     openTransferModal(fromPatient) {
       this.transferFrom = fromPatient;
       this.transferTo = "";
@@ -509,6 +747,7 @@ Vue.createApp({
       const modal = new bootstrap.Modal(transferModal);
       modal.show();
     },
+
     async transferPatientData() {
       if (!this.transferTo.trim()) {
         this.showAlert("請輸入目標帳號", "alert-danger");
@@ -577,80 +816,8 @@ Vue.createApp({
       ).hide();
       await this.syncMonitorData();
     },
-    async clearPatientData(patient, needConfirm = true) {
-      if (needConfirm) {
-        const confirmed = await this.showConfirm(
-          `確定要清除 ${patient} 的所有資料嗎?此操作無法還原。`,
-        );
-        if (!confirmed) {
-          return;
-        }
-      }
 
-      try {
-        await this.updateRecords(patient, this.keysToFilter);
-        this.showAlert(`已成功清除 ${patient} 的所有資料`);
-      } catch (error) {
-        console.error("Failed to clear patient data:", error);
-        this.showAlert(`清除 ${patient} 的資料時發生錯誤`, "alert-danger");
-      }
-    },
-    async removePatientFromMonitor(patient) {
-      const [_, patient_password] = this.patientAccountsWithPasswords.find(
-        (p) => p[0] === patient,
-      );
-
-      const payload = {
-        event: this.events.REMOVE_PATIENT,
-        account: this.account,
-        password: this.password,
-        patient,
-        patient_password: patient_password,
-      };
-
-      const { message } = await this.postRequest(payload);
-
-      if (message === this.events.messages.REMOVE_PATIENT_SUCCESS) {
-        // TODO: Remove this console.log
-        console.log(message);
-
-        await this.syncMonitorData();
-      } else {
-        console.error(message);
-      }
-    },
-    async deletePatient(patient) {
-      const confirmed = await this.showConfirm(
-        `請確認病患: ${patient} 是否要出院?`,
-      );
-      if (!confirmed) {
-        return;
-      }
-
-      const [_, patient_password] = this.patientAccountsWithPasswords.find(
-        (p) => p[0] === patient,
-      );
-
-      const payload = {
-        event: this.events.DELETE_PATIENT,
-        account: this.account,
-        password: this.password,
-        patient,
-        patient_password: patient_password,
-      };
-
-      const { message } = await this.postRequest(payload);
-
-      if (message === this.events.messages.DELETE_PATIENT_SUCCESS) {
-        // TODO: Remove this console.log
-        console.log(message);
-
-        // Refresh lists thoroughly
-        await this.syncMonitorData();
-      } else {
-        console.error(message);
-      }
-    },
+    // --- Sign Up ---
     async signUpPatient() {
       this.signUpPatientSubmitted = true;
 
@@ -694,20 +861,7 @@ Vue.createApp({
       }
     },
 
-    // --- Search & Filtering ---
-    // Debounced method to filter patient list based on searchQuery
-    filterPatients: debounce(function () {
-      const query = this.searchQuery.trim().toLowerCase();
-      if (query === "") {
-        this.filteredPatientAccounts = this.monitoredPatientAccounts;
-      } else {
-        this.filteredPatientAccounts = this.monitoredPatientAccounts.filter(
-          (account) => account.toLowerCase().includes(query),
-        );
-      }
-      // console.log("Filtered accounts:", this.filteredPatientAccounts);
-    }, 200), // 200ms debounce delay
-
+    // --- QR Code ---
     openQrCodeModal(index) {
       const account = this.filteredPatientAccounts[index];
       const [patient, patient_password] =
@@ -740,6 +894,7 @@ Vue.createApp({
       const modalInstance = new bootstrap.Modal(qrCodeModal);
       modalInstance.show();
     },
+
     async copyQrCodeImage(event) {
       const canvas = document.getElementById("qrCanvas");
       const btn = event.target.closest("button");
@@ -777,6 +932,7 @@ Vue.createApp({
         );
       }
     },
+
     printQrCode() {
       const canvas = document.getElementById("qrCanvas");
 
@@ -821,147 +977,8 @@ Vue.createApp({
       `);
       printWindow.document.close();
     },
-    updateRestrictionText(patientAccount) {
-      const limitAmount = String(
-        this.patientRecords[patientAccount]["limitAmount"],
-      ).trim();
-      if (!isNaN(limitAmount) && limitAmount !== "") {
-        let text;
-        if (
-          this.patientRecords[patientAccount]["foodCheckboxChecked"] &&
-          this.patientRecords[patientAccount]["waterCheckboxChecked"]
-        ) {
-          text = `限制進食加喝水不超過${
-            this.patientRecords[patientAccount]["limitAmount"]
-          }公克`;
-        } else if (this.patientRecords[patientAccount]["foodCheckboxChecked"]) {
-          text = `限制進食不超過${
-            this.patientRecords[patientAccount]["limitAmount"]
-          }公克`;
-        } else if (
-          this.patientRecords[patientAccount]["waterCheckboxChecked"]
-        ) {
-          text = `限制喝水不超過${
-            this.patientRecords[patientAccount]["limitAmount"]
-          }公克`;
-        }
-        this.restrictionText[patientAccount] = text;
-      } else {
-        this.restrictionText[patientAccount] = "";
-      }
-    },
-    toggleRestrictionEdit(patientAccount) {
-      const limitAmount = String(
-        this.patientRecords[patientAccount]["limitAmount"],
-      ).trim();
-      if (this.patientRecords[patientAccount]["isEditing"]) {
-        if (
-          !this.patientRecords[patientAccount]["foodCheckboxChecked"] &&
-          !this.patientRecords[patientAccount]["waterCheckboxChecked"]
-        ) {
-          if (isNaN(limitAmount)) {
-            this.showAlert("請勾選選項並輸入數字", "alert-danger");
-            return;
-          } else if (limitAmount !== "") {
-            this.showAlert("請勾選選項", "alert-danger");
-            return;
-          }
-        } else if (isNaN(limitAmount) || limitAmount === "") {
-          this.showAlert("請輸入數字", "alert-danger");
-          return;
-        } else if (limitAmount.startsWith("-") || limitAmount.startsWith(".")) {
-          this.showAlert("請輸入正整數", "alert-danger");
-          return;
-        }
-      }
-      this.patientRecords[patientAccount]["isEditing"] =
-        !this.patientRecords[patientAccount]["isEditing"];
-      if (!this.patientRecords[patientAccount]["isEditing"]) {
-        if (limitAmount !== "") {
-          this.updateRestrictionText(patientAccount);
-          this.currentEditingPatient = "";
-        }
-        this.updateRecords(patientAccount);
-        this.isEditingRestriction = false;
-      } else {
-        this.isEditingRestriction = true;
-        if (
-          this.currentEditingPatient !== "" &&
-          patientAccount !== this.currentEditingPatient
-        ) {
-          this.patientRecords[this.currentEditingPatient]["isEditing"] = false;
-          this.updateRestrictionText(this.currentEditingPatient);
-          this.updateRecords(this.currentEditingPatient);
-        }
-        this.currentEditingPatient = patientAccount;
-      }
-    },
-    async toggleRecordEdit(target, patientAccount) {
-      const [date, recordIndex] = target.attributes.id.textContent.split("-");
-      const record =
-        this.patientRecords[patientAccount][date]["data"][recordIndex];
-      if (this.editingRecordIndex === -1) {
-        this.editingRecordIndex = parseInt(recordIndex);
-        this.editingRecordPatientAccount = patientAccount;
-        for (const dietaryItem of this.dietaryItems) {
-          this.tempPatientRecord[dietaryItem] = record[dietaryItem];
-        }
-      } else {
-        this.editingRecordIndex = -1;
-        this.editingRecordPatientAccount = "";
-        for (const dietaryItem of this.dietaryItems) {
-          if (record[dietaryItem] === "") {
-            record[dietaryItem] = 0;
-          }
-          this.patientRecords[patientAccount][date][`${dietaryItem}Sum`] +=
-            record[dietaryItem] - this.tempPatientRecord[dietaryItem];
-        }
-        await this.updateRecords(patientAccount);
-        if (
-          this.dietaryItems.every((dietaryItem) => record[dietaryItem] === 0)
-        ) {
-          await this.removeRecord(target, patientAccount);
-        }
-      }
-    },
-    handleInput(value, patientAccount) {
-      const intValue = parseInt(value);
-      if (!isNaN(intValue)) {
-        this.patientRecords[patientAccount]["limitAmount"] = intValue;
-      }
-    },
-    async removeRecord(target, patientAccount) {
-      this.confirming = true;
-      const [date, index] = target.attributes.id.textContent.split("-");
-      const record = this.patientRecords[patientAccount][date]["data"][index];
-      const confirmMessageLines = [
-        "請確認是否移除這筆資料:",
-        `床號: ${patientAccount}`,
-        `日期: ${date.replaceAll("_", "/")}`,
-        `時間: ${record["time"]}`,
-        `進食: ${record["food"]}`,
-        `喝水: ${record["water"]}`,
-        `排尿: ${record["urination"]}`,
-        `排便: ${record["defecation"]}`,
-      ];
-      const confirmMessage = confirmMessageLines.join("\n");
-      const confirmed = await this.showConfirm(confirmMessage);
-      if (confirmed) {
-        this.removingRecord = true;
 
-        this.patientRecords[patientAccount][date]["count"] -= 1;
-        for (const dietaryItem of this.dietaryItems) {
-          this.patientRecords[patientAccount][date][`${dietaryItem}Sum`] -=
-            record[dietaryItem];
-        }
-        this.patientRecords[patientAccount][date]["data"].splice(index, 1);
-
-        await this.updateRecords(patientAccount);
-        this.removingRecord = false;
-      }
-      this.confirming = false;
-    },
-
+    // --- UI Helpers ---
     showAlert(message, type = "success") {
       this.bootstrapAlertMessage = message;
       this.bootstrapAlertClass =
@@ -1037,6 +1054,7 @@ Vue.createApp({
       return exceed ? "red" : "inherit";
     },
 
+    /** Scrolls the window to the top smoothly */
     scrollToTop() {
       globalThis.scrollTo({
         top: 0,
@@ -1044,8 +1062,10 @@ Vue.createApp({
       });
     },
 
+    /** Handles the window scroll event to show/hide the scroll-to-top button */
     handleScroll() {
-      this.showScrollButton = globalThis.scrollY > 20;
+      // Show button when scrolled down more than a certain amount (e.g., 100px)
+      this.showScrollButton = globalThis.scrollY > 100;
     },
   },
 }).mount("#app");
