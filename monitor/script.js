@@ -142,6 +142,11 @@ Vue.createApp({
     // Set up date/time updates
     this.updateDateTime();
     setInterval(this.updateDateTime, 1000);
+
+    // Set up data synchronization and visibility handling
+    if (this.authenticated) {
+      this.setupSync();
+    }
   },
 
   async mounted() {
@@ -162,30 +167,15 @@ Vue.createApp({
       await this.authenticate(); // Re-authenticate with URL params
     }
 
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        this.syncMonitorData();
-        this.startSyncInterval();
-      } else {
-        this.stopSyncInterval();
-      }
-    });
-
-    setInterval(async () => {
-      if (!document.hidden) {
-        await this.syncMonitorData();
-      }
-    }, 3000);
-
     globalThis.addEventListener("scroll", this.handleScroll);
   },
 
   beforeUnmount() {
+    this.stopSyncInterval();
     document.removeEventListener(
       "visibilitychange",
       this.handleVisibilityChange,
     );
-    this.stopSyncInterval();
     globalThis.removeEventListener("scroll", this.handleScroll);
   },
 
@@ -266,6 +256,18 @@ Vue.createApp({
         throw new Error(error.message);
       }
     },
+
+    // --- Data Synchronization & Processing ---
+    setupSync() {
+      if (this.authenticated) {
+        document.addEventListener(
+          "visibilitychange",
+          this.handleVisibilityChange,
+        );
+        this.handleVisibilityChange(); // Run once to set initial state
+      }
+    },
+
     processFetchedData(fetchedData) {
       this.patientRecords = fetchedData["patient_records"];
       this.patientAccountsWithPasswords = fetchedData["patient_accounts"];
@@ -569,6 +571,7 @@ Vue.createApp({
             this.processFetchedData(fetchedData);
             await this.fetchUnmonitoredPatients();
             this.filterPatients();
+            this.setupSync(); // Start syncing data
         }
       }
     },
