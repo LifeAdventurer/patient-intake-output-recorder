@@ -234,7 +234,11 @@ Vue.createApp({
       this.currentDateYY_MM_DD = `${year}_${month}_${day}`;
     },
 
+    // --- API Communication ---
     async postRequest(payload) {
+      if (!this.apiUrl) {
+        throw new Error("API URL is not configured.");
+      }
       try {
         const response = await fetch(this.apiUrl, {
           method: "POST",
@@ -247,14 +251,29 @@ Vue.createApp({
         });
 
         if (!response.ok) {
-          throw new Error("Failed to post request.");
+          // Try to get more specific error from response body if possible
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (jsonError) {
+            // If response is not JSON or empty
+            throw new Error(
+              `HTTP error ${response.status}: ${response.statusText}`,
+            );
+          }
+          // Use message from API response if available
+          const errorMessage =
+            errorData?.message ||
+            `API request failed with status ${response.status}`;
+          throw new Error(errorMessage);
         }
 
-        // TODO: Remove this console.log
-        console.log("Successfully posted the request.");
+        console.log("API Request successful for event:", payload?.event); // Log success
         return await response.json();
       } catch (error) {
-        throw new Error(error.message);
+        console.error("postRequest Error:", error);
+        // Re-throw the processed error for calling function to handle
+        throw error;
       }
     },
 
