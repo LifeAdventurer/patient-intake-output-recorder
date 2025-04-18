@@ -858,37 +858,69 @@ Vue.createApp({
     },
 
     // --- QR Code ---
-    openQrCodeModal(index) {
-      const account = this.filteredPatientAccounts[index];
-      const [patient, patient_password] =
-        this.patientAccountsWithPasswords.find((p) => p[0] === account);
+    openQrCodeModal(patientAccount) {
+      const patientInfo = this.patientAccountsWithPasswords.find(
+        (p) => p[0] === patientAccount,
+      );
+
+      if (!patientInfo) {
+        this.showAlert(`找不到病患 ${patientAccount} 的登入資訊`, "danger");
+        return;
+      }
+
+      const [patient, patient_password] = patientInfo;
       this.qrCodePatient = patient;
-      this.qrCodePatientPassword = patient_password;
+      this.qrCodePatientPassword = patient_password; // Store if needed elsewhere
 
       const encodedPatient = encodeURIComponent(patient);
       const encodedPassword = encodeURIComponent(patient_password);
 
+      if (!this.webUrl) {
+        this.showAlert("網頁 URL 未設定，無法生成 QR Code。", "danger");
+        return;
+      }
+
+      // Construct URL for the patient view
       const qrData = `${this.webUrl}/patient/?acct=${encodedPatient}&pw=${encodedPassword}`;
-      const qrCode = qrcode(0, "H");
-      qrCode.addData(qrData);
-      qrCode.make();
+      console.log("Generating QR Code for:", qrData);
 
-      const qrCodeContainer = document.getElementById("qrCodeContainer");
-      // Clear previous content
-      qrCodeContainer.innerHTML = "";
+      try {
+        // Using the provided qrcode-generator library syntax
+        const qr = qrcode(0, "H"); // Type 0, Error Correction Level H
+        qr.addData(qrData);
+        qr.make();
 
-      const canvas = document.createElement("canvas");
-      canvas.id = "qrCanvas";
-      const desiredSize = 256;
-      canvas.width = desiredSize;
-      canvas.height = desiredSize;
+        const qrCodeContainer = document.getElementById("qrCodeContainer");
+        if (!qrCodeContainer)
+          throw new Error("QR Code container element not found.");
+        qrCodeContainer.innerHTML = ""; // Clear previous QR Code
 
-      qrCode.renderTo2dContext(canvas.getContext("2d"), 6);
-      qrCodeContainer.appendChild(canvas);
+        // Render to canvas
+        const canvas = document.createElement("canvas");
+        // Let the library decide initial size based on data, then scale if needed
+        // qr.renderTo2dContext(canvas.getContext("2d"), moduleSize);
+        // Or use the library's DOM element creation method if available
+        // Example using createImgTag
+        // qrCodeContainer.innerHTML = qr.createImgTag(6, 10); // (cellSize, margin)
 
-      const qrCodeModal = document.getElementById("qrCodeModal");
-      const modalInstance = new bootstrap.Modal(qrCodeModal);
-      modalInstance.show();
+        // Manual canvas rendering
+        const scale = 6; // Size of each QR module in pixels
+        const size = qr.getModuleCount() * scale;
+        canvas.width = size;
+        canvas.height = size;
+        canvas.id = "qrCanvas"; // Assign ID for later use (copy/print)
+        qr.renderTo2dContext(canvas.getContext("2d"), scale);
+        qrCodeContainer.appendChild(canvas);
+
+        // Show the Bootstrap modal
+        const modalElement = document.getElementById("qrCodeModal");
+        if (!modalElement) throw new Error("QR Code modal element not found.");
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+      } catch (error) {
+        console.error("Failed to generate or display QR Code:", error);
+        this.showAlert(`產生 QR Code 時發生錯誤: ${error.message}`, "danger");
+      }
     },
 
     async copyQrCodeImage(event) {
