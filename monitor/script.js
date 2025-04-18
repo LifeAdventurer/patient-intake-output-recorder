@@ -1087,32 +1087,60 @@ Vue.createApp({
       return `${firstDate} ~ ${lastDate}`;
     },
 
+    /** Determines the color for the food sum display based on restrictions */
     getFoodSumColor(patientAccount) {
-      let exceed = false;
-      const patientRecord = this.patientRecords[patientAccount];
-      if (patientRecord["foodCheckboxChecked"]) {
-        exceed =
-          patientRecord[this.currentDateYY_MM_DD]["foodSum"] +
-            (patientRecord["waterCheckboxChecked"]
-              ? patientRecord[this.currentDateYY_MM_DD]["waterSum"]
-              : 0) >
-          patientRecord["limitAmount"];
+      const record = this.patientRecords[patientAccount];
+      const todayRecord = record?.[this.currentDateYY_MM_DD];
+
+      // Ensure necessary data exists and restriction is active
+      if (
+        !record ||
+        !todayRecord ||
+        !record.foodCheckboxChecked ||
+        !record.limitAmount ||
+        isNaN(parseInt(record.limitAmount))
+      ) {
+        return "inherit"; // Default color if no valid restriction applies
       }
-      return exceed ? "red" : "inherit";
+
+      const limit = parseInt(record.limitAmount);
+      const foodSum = todayRecord.foodSum ?? 0;
+      const waterSum = todayRecord.waterSum ?? 0;
+
+      let totalIntake = foodSum;
+      if (record.waterCheckboxChecked) {
+        // If water is also checked, consider the combined sum
+        totalIntake += waterSum;
+      }
+      return totalIntake >= limit ? "red" : "inherit";
     },
 
+    /** Determines the color for the water sum display based on restrictions */
     getWaterSumColor(patientAccount) {
-      let exceed = false;
-      const patientRecord = this.patientRecords[patientAccount];
-      if (patientRecord["waterCheckboxChecked"]) {
-        exceed =
-          patientRecord[this.currentDateYY_MM_DD]["waterSum"] +
-            (patientRecord["foodCheckboxChecked"]
-              ? patientRecord[this.currentDateYY_MM_DD]["foodSum"]
-              : 0) >
-          patientRecord["limitAmount"];
+      const record = this.patientRecords[patientAccount];
+      const todayRecord = record?.[this.currentDateYY_MM_DD];
+
+      // Ensure necessary data exists and restriction is active
+      if (
+        !record ||
+        !todayRecord ||
+        !record.waterCheckboxChecked ||
+        !record.limitAmount ||
+        isNaN(parseInt(record.limitAmount))
+      ) {
+        return "inherit"; // Default color if no valid restriction applies
       }
-      return exceed ? "red" : "inherit";
+
+      const limit = parseInt(record.limitAmount);
+      const foodSum = todayRecord.foodSum ?? 0;
+      const waterSum = todayRecord.waterSum ?? 0;
+
+      let totalIntake = waterSum;
+      if (record.foodCheckboxChecked) {
+        // If food is also checked, consider the combined sum
+        totalIntake += foodSum;
+      }
+      return totalIntake >= limit ? "red" : "inherit";
     },
 
     /** Scrolls the window to the top smoothly */
