@@ -309,27 +309,34 @@ Vue.createApp({
       }
       await this.fetchUnmonitoredPatients();
     },
+
     startSyncInterval() {
-      if (this.syncIntervalId === null) {
-        this.syncIntervalId = setInterval(() => {
-          this.syncMonitorData();
-        }, 3000);
+      if (this.syncIntervalId === null && this.authenticated) {
+        console.log("Starting sync interval...");
+        // Run immediately once, then set interval
+        this.syncMonitorData();
+        this.syncIntervalId = setInterval(this.syncMonitorData(), 3000); // Sync every 3 seconds
       }
     },
+
     stopSyncInterval() {
       if (this.syncIntervalId !== null) {
+        console.log("Stopping sync interval.");
         clearInterval(this.syncIntervalId);
         this.syncIntervalId = null;
       }
     },
+
     handleVisibilityChange() {
-      if (!document.hidden) {
-        this.syncMonitorData();
-        this.startSyncInterval();
-      } else {
+      if (!this.authenticated) return; // Don't sync if not logged in
+
+      if (document.hidden) {
         this.stopSyncInterval();
+      } else {
+        this.startSyncInterval(); // This will call syncMonitorData immediately
       }
     },
+
     async updateRecords(
       patientAccount,
       record = this.patientRecords[patientAccount],
