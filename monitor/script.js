@@ -1058,17 +1058,32 @@ Vue.createApp({
       // The 'confirming' flag is reset by the 'hidden.bs.modal' listener.
     },
 
+    /** Gets the first and last record dates for a patient */
     getFirstAndLastDates(patientAccount) {
-      const keys = Object.keys(this.patientRecords[patientAccount]).filter(
-        (key) => {
-          return !(key in this.keysToFilter);
-        },
+      const record = this.patientRecords[patientAccount];
+      if (!record) return "無紀錄";
+
+      const dateKeys = Object.keys(record).filter(
+        (key) =>
+          !this.keysToFilter.hasOwnProperty(key) &&
+          /^\d{4}_\d{1,2}_\d{1,2}$/.test(key), // Basic validation for date key format
       );
-      if (keys.length === 0) {
+
+      if (dateKeys.length === 0) {
         return "無紀錄";
       }
-      const firstDate = keys[0].replace(/_/g, "/");
-      const lastDate = keys[keys.length - 1].replace(/_/g, "/");
+
+      // Sort keys chronologically (important if keys aren't guaranteed ordered)
+      dateKeys.sort((a, b) => {
+        // Convert YYYY_M_D to comparable format (e.g., YYYYMMDD)
+        const dateA = new Date(a.replace(/_/g, "-")); // Convert to YYYY-MM-DD for Date parsing
+        const dateB = new Date(b.replace(/_/g, "-"));
+        return dateA - dateB;
+      });
+
+      const firstDate = dateKeys[0].replace(/_/g, "/"); // Format for display
+      const lastDate = dateKeys[dateKeys.length - 1].replace(/_/g, "/"); // Format for display
+
       return `${firstDate} ~ ${lastDate}`;
     },
 
