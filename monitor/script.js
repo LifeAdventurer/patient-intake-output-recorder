@@ -893,37 +893,54 @@ Vue.createApp({
 
     async copyQrCodeImage(event) {
       const canvas = document.getElementById("qrCanvas");
-      const btn = event.target.closest("button");
-      const icon = btn.querySelector("i");
+      const btn = event.currentTarget; // Use currentTarget for the button clicked
+      const icon = btn ? btn.querySelector("i") : null;
 
       if (!canvas) {
         this.showAlert("找不到 QR Code 圖片。", "danger");
         return;
       }
 
+      if (!navigator.clipboard || !navigator.clipboard.write) {
+        this.showAlert(
+          "您的瀏覽器不支援或未啟用剪貼簿複製圖片功能。",
+          "warning",
+        );
+        return;
+      }
+
       try {
+        // Get blob from canvas
         const blob = await new Promise((resolve, reject) => {
           canvas.toBlob((blob) => {
-            if (!blob) {
-              reject(new Error("Failed to convert QR Code to image."));
-            } else {
+            if (blob) {
               resolve(blob);
+            } else {
+              reject(new Error("Canvas toBlob failed."));
             }
           }, "image/png");
         });
 
+        // Write to clipboard using Clipboard API
         await navigator.clipboard.write([
           new ClipboardItem({ [blob.type]: blob }),
         ]);
 
-        icon.className = "fas fa-check";
-        setTimeout(() => {
-          icon.className = "fas fa-copy";
-        }, 1500);
+        // Visual feedback
+        if (icon) {
+          const originalClass = icon.className;
+          icon.className = "fas fa-check text-success"; // Indicate success
+          setTimeout(() => {
+            if (icon) icon.className = originalClass; // Restore original icon
+          }, 2000);
+        } else {
+          // Show alert when icon visual feedback is not working
+          this.showAlert("QR Code 圖片已複製到剪貼簿。", "success", 2000); // Shorter success message
+        }
       } catch (error) {
         console.error("Copy QR Code failed:", error);
         this.showAlert(
-          "複製 QR Code 失敗，請直接在上方的 QR Code 上按右鍵複製。",
+          "複製 QR Code 失敗。請嘗試在圖片上按右鍵 -> 複製圖片。",
           "danger",
         );
       }
