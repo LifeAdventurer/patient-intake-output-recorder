@@ -815,45 +815,83 @@ Vue.createApp({
 
     // --- Sign Up ---
     async signUpPatient() {
-      this.signUpPatientSubmitted = true;
+      this.signUpPatientSubmitted = true; // Trigger validation feedback
+      const form = document.getElementById("signUpForm"); // Give the form an id instead
 
-      const form = document.getElementById("signUpModal").querySelector("form");
+      if (from && form.checkValidity()) {
+        console.log("Signing up new patient:", this.signUpPatientAccount);
+        try {
+          const payload = {
+            event: this.events.SIGN_UP_PATIENT,
+            account: this.account, // Admin account
+            password: this.password, // Admin password
+            patient: this.signUpPatientAccount,
+            patient_password: this.signUpPatientPassword,
+          };
+          const response = await this.postRequest(payload);
 
-      if (form.checkValidity()) {
-        const payload = {
-          event: this.events.SIGN_UP_PATIENT,
-          account: this.account,
-          password: this.password,
-          patient: this.signUpPatientAccount,
-          patient_password: this.signUpPatientPassword,
-        };
-        const response = await this.postRequest(payload);
+          if (response.message === this.events.messages.ACCT_CREATED) {
+            // Check for specific success message
+            this.signUpAlertMessage = `病患帳號 ${this.signUpPatientAccount}註冊成功。`;
+            this.signUpAlertClass = "alert-success";
 
-        if (response.message === this.events.messages.ACCT_ALREADY_EXISTS) {
-          this.signUpAlertMessage = "此帳號名已被使用。";
-          this.signUpAlertClass = "alert-danger";
-          this.signUpPatientAccount = "";
-          this.signUpPatientPassword = "";
-        } else {
-          this.signUpAlertMessage = "註冊成功。";
-          this.signUpAlertClass = "alert-success";
-
-          setTimeout(async () => {
-            if (!this.stayOpenAfterSignup) {
-              const signUpModal = document.getElementById("signUpModal");
-              const modalInstance = bootstrap.Modal.getInstance(signUpModal);
-              modalInstance.hide();
-            }
+            // Auto-add to monitor if checked
             if (this.autoAddToMonitor) {
+              // Use await here to ensure it completes before potentially closing modal
               await this.addPatientToMonitor(this.signUpPatientAccount);
+            } else {
+              // Refresh unmonitored list if not auto-adding, as the new patient should appear there
+              await this.fetchUnmonitoredPatients();
             }
-            // Reset form and state
+
+            // Hide modal after delay unless 'stayOpen' is checked
+            if (!this.stayOpenAfterSignup) {
+              setTimeout(async () => {
+                const modalElement = document.getElementById("signUpModal");
+                if (modalElement) {
+                  const modal = bootstrap.Modal.getInstance(modalElement);
+                  if (modal) modal.hide();
+                  // Reset form and state
+                  this.signUpPatientAccount = "";
+                  this.signUpPatientPassword = "";
+                  this.signUpPatientSubmitted = false;
+                  this.signUpAlertMessage = "";
+                }
+              }, 1500); // Shorter delay for success
+            } else {
+              // Reset form immediately if staying open
+              this.signUpPatientAccount = "";
+              this.signUpPatientPassword = "";
+              this.signUpPatientSubmitted = false;
+              // Don't clear success message yet
+              setTimeout(() => {
+                this.signUpAlertMessage = "";
+              }, 3000); // Clear message later
+            }
+          } else if (
+            response.message === this.events.messages.ACCT_ALREADY_EXISTS
+          ) {
+            this.signUpAlertMessage = "此病患帳號名稱已被使用。";
+            this.signUpAlertClass = "alert-danger";
             this.signUpPatientAccount = "";
             this.signUpPatientPassword = "";
-            this.signUpPatientSubmitted = false;
-            this.signUpAlertMessage = "";
-          }, 3000);
+          } else {
+            // Handle other potential errors from API
+            this.signUpAlertMessage = `註冊失敗: ${response.message || "未知錯誤"}`;
+            this.signUpAlertClass = "alert-danger";
+          }
+        } catch (error) {
+          console.error("Sign up failed:", error);
+          this.signUpAlertMessage = `註冊時發生錯誤: ${error.message}`;
+          this.signUpAlertClass = "alert-danger";
         }
+      } else {
+        // Form validation failed (HTML5)
+        console.log("Sign up form invalid.");
+        if (!form) console.error("Sign up form element not found.");
+        // Generic message, but browser usually handles feedback
+        this.signUpAlertMessage = "請填寫所有必填欄位。";
+        this.signUpAlertClass = "alert-warning";
       }
     },
 
