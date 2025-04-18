@@ -199,7 +199,7 @@ Vue.createApp({
         console.log("Configuration loaded.");
       } catch (error) {
         console.error("Failed to load config.json:", error);
-        this.showAlert("無法載入應用程式設定，請稍後再試。", "alert-danger");
+        this.showAlert("無法載入應用程式設定，請稍後再試。", "danger");
         // Potentially halt application Initialization here if config is critical
       }
     },
@@ -213,7 +213,7 @@ Vue.createApp({
         console.log("API events loaded.");
       } catch (error) {
         console.error("Failed to load events.json:", error);
-        this.showAlert("無法載入 API 事件設定，請稍後再試。", "alert-danger");
+        this.showAlert("無法載入 API 事件設定，請稍後再試。", "danger");
         // Potentially halt application Initialization here if events are critical
       }
     },
@@ -280,7 +280,7 @@ Vue.createApp({
     // --- Authentication ---
     async authenticate() {
       if (!this.account || !this.password) {
-        this.showAlert("請輸入帳號和密碼。", "alert-danger");
+        this.showAlert("請輸入帳號和密碼。", "danger");
         return;
       }
       console.log("Attempting authentication for:", this.account);
@@ -300,23 +300,20 @@ Vue.createApp({
         ) {
           switch (fetchedData.message) {
             case this.events.messages.ACCT_NOT_EXIST:
-              this.showAlert("帳號不存在", "alert-danger");
+              this.showAlert("帳號不存在", "danger");
               this.resetCredentials();
               break;
             case this.events.messages.AUTH_FAIL_PASSWORD:
-              this.showAlert("密碼錯誤", "alert-danger");
+              this.showAlert("密碼錯誤", "danger");
               this.password = ""; // Clear only password
               break;
             case this.events.messages.INVALID_ACCT_TYPE:
-              this.showAlert("此帳號沒有管理權限", "alert-danger");
+              this.showAlert("此帳號沒有管理權限", "danger");
               this.resetCredentials();
               break;
             default:
               // Handle other potential non-success messages
-              this.showAlert(
-                `驗證失敗: ${fetchedData.message}`,
-                "alert-danger",
-              );
+              this.showAlert(`驗證失敗: ${fetchedData.message}`, "danger");
               this.resetCredentials();
           }
           this.authenticated = false;
@@ -333,7 +330,7 @@ Vue.createApp({
         }
       } catch (error) {
         console.error("Authentication failed:", error);
-        this.showAlert(`登入時發生錯誤: ${error.message}`, "alert-danger");
+        this.showAlert(`登入時發生錯誤: ${error.message}`, "danger");
         this.authenticated = false;
         // Consider reset credentials on network/other errors too
         // this.resetCredentials();
@@ -575,7 +572,7 @@ Vue.createApp({
         this.showAlert(`已成功清除 ${patient} 的所有資料`);
       } catch (error) {
         console.error("Failed to clear patient data:", error);
-        this.showAlert(`清除 ${patient} 的資料時發生錯誤`, "alert-danger");
+        this.showAlert(`清除 ${patient} 的資料時發生錯誤`, "danger");
       }
     },
 
@@ -702,17 +699,17 @@ Vue.createApp({
           !this.patientRecords[patientAccount]["waterCheckboxChecked"]
         ) {
           if (isNaN(limitAmount)) {
-            this.showAlert("請勾選選項並輸入數字", "alert-danger");
+            this.showAlert("請勾選選項並輸入數字", "danger");
             return;
           } else if (limitAmount !== "") {
-            this.showAlert("請勾選選項", "alert-danger");
+            this.showAlert("請勾選選項", "danger");
             return;
           }
         } else if (isNaN(limitAmount) || limitAmount === "") {
-          this.showAlert("請輸入數字", "alert-danger");
+          this.showAlert("請輸入數字", "danger");
           return;
         } else if (limitAmount.startsWith("-") || limitAmount.startsWith(".")) {
-          this.showAlert("請輸入正整數", "alert-danger");
+          this.showAlert("請輸入正整數", "danger");
           return;
         }
       }
@@ -750,7 +747,7 @@ Vue.createApp({
 
     async transferPatientData() {
       if (!this.transferTo.trim()) {
-        this.showAlert("請輸入目標帳號", "alert-danger");
+        this.showAlert("請輸入目標帳號", "danger");
         return;
       }
 
@@ -762,14 +759,14 @@ Vue.createApp({
       );
 
       if (!isTargetMonitored && !isTargetUnmonitored) {
-        this.showAlert("欲轉移目標帳號不存在", "alert-danger");
+        this.showAlert("欲轉移目標帳號不存在", "danger");
         return;
       }
 
       if (isTargetUnmonitored) {
         this.showAlert(
           "目標帳號尚未加入監測，請先加入監測後再移轉資料",
-          "alert-danger",
+          "danger",
         );
         return;
       }
@@ -787,10 +784,7 @@ Vue.createApp({
         keys.every((k) => defaultKeys.includes(k));
 
       if (targetData && !isOnlyDefaultKeys) {
-        this.showAlert(
-          "目標帳號已有資料，無法轉移，請先清除資料",
-          "alert-danger",
-        );
+        this.showAlert("目標帳號已有資料，無法轉移，請先清除資料", "danger");
         return;
       }
 
@@ -901,7 +895,7 @@ Vue.createApp({
       const icon = btn.querySelector("i");
 
       if (!canvas) {
-        this.showAlert("找不到 QR Code 圖片。", "alert-danger");
+        this.showAlert("找不到 QR Code 圖片。", "danger");
         return;
       }
 
@@ -928,7 +922,7 @@ Vue.createApp({
         console.error("Copy QR Code failed:", error);
         this.showAlert(
           "複製 QR Code 失敗，請直接在上方的 QR Code 上按右鍵複製。",
-          "alert-danger",
+          "danger",
         );
       }
     },
@@ -937,7 +931,7 @@ Vue.createApp({
       const canvas = document.getElementById("qrCanvas");
 
       if (!canvas) {
-        this.showAlert("找不到 QR Code 圖片。", "alert-danger");
+        this.showAlert("找不到 QR Code 圖片。", "danger");
         return;
       }
 
@@ -979,14 +973,35 @@ Vue.createApp({
     },
 
     // --- UI Helpers ---
-    showAlert(message, type = "success") {
+    showAlert(message, type = "success", duration = 3000) {
       this.bootstrapAlertMessage = message;
-      this.bootstrapAlertClass =
-        type === "success" ? "alert-success" : "alert-danger";
+      // Map simple type to Bootstrap class
+      switch (type) {
+        case "danger":
+          this.bootstrapAlertClass = "alert-danger";
+          break;
+        case "warning":
+          this.bootstrapAlertClass = "alert-warning";
+          break;
+        case "info":
+          this.bootstrapAlertClass = "alert-info";
+          break;
+        case "success":
+        default:
+          this.bootstrapAlertClass = "alert-success";
+          break;
+      }
 
-      setTimeout(() => {
+      // Clear existing timeout if any
+      if (this.alertTimeoutId) {
+        clearTimeout(this.alertTimeoutId);
+      }
+
+      // Set new timeout to clear the message
+      this.alertTimeoutId = setTimeout(() => {
         this.bootstrapAlertMessage = "";
-      }, 3000);
+        this.alertTimeoutId = null; // Clear the timeout id
+      }, duration);
     },
 
     showConfirm(message) {
