@@ -187,23 +187,34 @@ Vue.createApp({
   // --- Methods ---
   // Actions triggered by user interactions or internal logic
   methods: {
+    // --- Initialization & Configuration ---
     async fetchConfig() {
       try {
         const response = await fetch("./config.json");
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
         const config = await response.json();
         this.apiUrl = config.apiUrl;
         this.webUrl = config.webUrl;
+        console.log("Configuration loaded.");
       } catch (error) {
-        console.error("Failed to load config", error);
+        console.error("Failed to load config.json:", error);
+        this.showAlert("無法載入應用程式設定，請稍後再試。", "alert-danger");
+        // Potentially halt application Initialization here if config is critical
       }
     },
 
     async loadAPIEvents() {
       try {
         const response = await fetch("./events.json");
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
         this.events = await response.json();
+        console.log("API events loaded.");
       } catch (error) {
-        console.error("Failed to load events", error);
+        console.error("Failed to load events.json:", error);
+        this.showAlert("無法載入 API 事件設定，請稍後再試。", "alert-danger");
+        // Potentially halt application Initialization here if events are critical
       }
     },
 
