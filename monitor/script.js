@@ -483,6 +483,7 @@ Vue.createApp({
         console.error(response.message);
       }
     },
+
     async addPatientToMonitor(patient) {
       const payload = {
         event: this.events.ADD_PATIENT,
@@ -499,6 +500,7 @@ Vue.createApp({
         console.error(message);
       }
     },
+
     async removePatientFromMonitor(patient) {
       const [_, patient_password] = this.patientAccountsWithPasswords.find(
         (p) => p[0] === patient,
@@ -929,47 +931,69 @@ Vue.createApp({
 
     printQrCode() {
       const canvas = document.getElementById("qrCanvas");
+      const patientName = this.qrCodePatient || "病患"; // Use stored name
 
       if (!canvas) {
         this.showAlert("找不到 QR Code 圖片。", "danger");
         return;
       }
 
-      const dataUrl = canvas.toDataURL("image/png");
-      const patient = this.qrCodePatient;
+      try {
+        const dataUrl = canvas.toDataURL("image/png");
+        const printWindow = window.open("", "_blank");
 
-      const printWindow = window.open("", "_blank");
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>列印 QR Code</title>
-            <style>
-              body {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                margin: 0;
-                font-family: sans-serif;
-              }
-              h2 {
-                font-size: 18px;
-                margin-bottom: 20px;
-              }
-              img {
-                max-width: 90%;
-                max-height: 90%;
-              }
-            </style>
-          </head>
-          <body>
-            <h2>${patient}</h2>
-            <img src="${dataUrl}" alt="QR Code" onload="window.print();" />
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+        if (!printWindow) {
+          this.showAlert(
+            "無法開啟列印視窗，請檢察您的彈出視窗攔截設定。",
+            "warning",
+          );
+          return;
+        }
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>列印 QR Code - ${patientName}</title>
+                    <style>
+                        @media print {
+                            body { margin: 0; } /* Remove default margins for printing */
+                            #print-content { page-break-inside: avoid; } /* Try to keep content on one page */
+                        }
+                        body {
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 90vh; /* Use min-height */
+                            font-family: sans-serif;
+                            text-align: center; /* Center align text */
+                        }
+                        #print-content {
+                             padding: 20px;
+                             display: inline-block; /* Fit content size */
+                        }
+                        h2 {
+                            font-size: 18px;
+                            margin-top: 0;
+                            margin-bottom: 15px;
+                        }
+                        img {
+                            max-width: 100%; /* Ensure image fits */
+                            height: auto; /* Maintain aspect ratio */
+                            display: block; /* Remove extra space below image */
+                            margin: 0 auto; /* Center image */
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div id="print-content">
+                        <h2>${patientName}</h2>
+                        <img src="${dataUrl}" alt="QR Code for ${patientName}" onload="window.print(); setTimeout(window.close, 100);" />
+                    </div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+      } catch (error) {}
     },
 
     // --- UI Helpers ---
