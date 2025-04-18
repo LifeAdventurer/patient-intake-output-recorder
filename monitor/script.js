@@ -149,7 +149,7 @@ Vue.createApp({
     }
   },
 
-  async mounted() {
+  mounted() {
     // Add scroll listener after component is mounted
     globalThis.addEventListener("scroll", this.handleScroll);
 
@@ -169,7 +169,7 @@ Vue.createApp({
       // Clear local storage if using URL params
       localStorage.removeItem("account");
       localStorage.removeItem("password");
-      await this.authenticate(); // Re-authenticate with URL params
+      this.authenticate(); // Re-authenticate with URL params
     }
   },
 
