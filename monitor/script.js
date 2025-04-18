@@ -141,7 +141,7 @@ Vue.createApp({
 
     // Set up date/time updates
     this.updateDateTime();
-    setInterval(this.updateDateTime, 1000);
+    this.dateTimeInterval = setInterval(this.updateDateTime, 1000);
 
     // Set up data synchronization and visibility handling
     if (this.authenticated) {
@@ -150,6 +150,10 @@ Vue.createApp({
   },
 
   async mounted() {
+    // Add scroll listener after component is mounted
+    globalThis.addEventListener("scroll", this.handleScroll);
+
+    // Check URL parameters for credentials (alternative login method)
     const urlParams = new URLSearchParams(window.location.search);
     const urlAccount = urlParams.get("acct");
     const urlPassword = urlParams.get("pw");
@@ -159,6 +163,7 @@ Vue.createApp({
       urlPassword &&
       (!this.authenticated || this.account !== urlAccount)
     ) {
+      console.log("Authenticating via URL parameters...");
       this.account = urlAccount;
       this.password = urlPassword;
       // Clear local storage if using URL params
@@ -166,11 +171,11 @@ Vue.createApp({
       localStorage.removeItem("password");
       await this.authenticate(); // Re-authenticate with URL params
     }
-
-    globalThis.addEventListener("scroll", this.handleScroll);
   },
 
   beforeUnmount() {
+    // Clean up intervals and event listeners to prevent memory leaks
+    clearInterval(this.dateTimeInterval);
     this.stopSyncInterval();
     document.removeEventListener(
       "visibilitychange",
@@ -317,7 +322,7 @@ Vue.createApp({
         console.log("Starting sync interval...");
         // Run immediately once, then set interval
         this.syncMonitorData();
-        this.syncIntervalId = setInterval(this.syncMonitorData(), 3000); // Sync every 3 seconds
+        this.syncIntervalId = setInterval(this.syncMonitorData, 3000); // Sync every 3 seconds
       }
     },
 
