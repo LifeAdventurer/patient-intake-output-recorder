@@ -301,8 +301,7 @@ Vue.createApp({
           switch (fetchedData.message) {
             case this.events.messages.ACCT_NOT_EXIST:
               this.showAlert("帳號不存在", "alert-danger");
-              this.account = "";
-              this.password = "";
+              this.resetCredentials();
               break;
             case this.events.messages.AUTH_FAIL_PASSWORD:
               this.showAlert("密碼錯誤", "alert-danger");
@@ -310,8 +309,7 @@ Vue.createApp({
               break;
             case this.events.messages.INVALID_ACCT_TYPE:
               this.showAlert("此帳號沒有管理權限", "alert-danger");
-              this.account = "";
-              this.password = "";
+              this.resetCredentials();
               break;
             default:
               // Handle other potential non-success messages
@@ -319,8 +317,7 @@ Vue.createApp({
                 `驗證失敗: ${fetchedData.message}`,
                 "alert-danger",
               );
-              this.account = "";
-              this.password = "";
+              this.resetCredentials();
           }
           this.authenticated = false;
         } else {
@@ -339,19 +336,22 @@ Vue.createApp({
         this.showAlert(`登入時發生錯誤: ${error.message}`, "alert-danger");
         this.authenticated = false;
         // Consider reset credentials on network/other errors too
-        // this.account = "";
-        // this.password = "";
+        // this.resetCredentials();
       }
+    },
+
+    resetCredentials() {
+      this.account = "";
+      this.password = "";
+      localStorage.removeItem("account");
+      localStorage.removeItem("password");
     },
 
     async confirmLogout() {
       const confirmed = await this.showConfirm("請確認是否要登出");
       if (confirmed) {
-        this.account = "";
-        this.password = "";
         this.authenticated = false;
-        localStorage.removeItem("account");
-        localStorage.removeItem("password");
+        this.resetCredentials();
       }
     },
 
