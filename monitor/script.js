@@ -564,22 +564,39 @@ Vue.createApp({
       }
     },
 
+    // --- Patient Management ---
     async fetchUnmonitoredPatients() {
-      const payload = {
-        event: this.events.FETCH_UNMONITORED_PATIENTS,
-        account: this.account,
-        password: this.password,
-      };
-      const response = await this.postRequest(payload);
-      if (
-        response.message ===
-        this.events.messages.FETCH_UNMONITORED_PATIENTS_SUCCESS
-      ) {
-        this.unmonitoredPatients = response["unmonitored_patients"].map(
-          (patient) => patient[1],
-        );
-      } else {
-        console.error(response.message);
+      if (!this.authenticated) return;
+      // console.log("Fetching unmonitored patients...");
+      try {
+        const payload = {
+          event: this.events.FETCH_UNMONITORED_PATIENTS,
+          account: this.account,
+          password: this.password,
+        };
+        const response = await this.postRequest(payload);
+
+        if (
+          response.message ===
+          this.events.messages.FETCH_UNMONITORED_PATIENTS_SUCCESS
+        ) {
+          this.unmonitoredPatients =
+            response.unmonitored_patients?.map((p) => p[1]) || [];
+          // console.log("Unmonitored patients updated:", this.unmonitoredPatients);
+        } else {
+          console.error(
+            "Failed to fetch unmonitored patients:",
+            response.message,
+          );
+          this.showAlert(
+            `無法獲取未監測病患列表: ${response.message}`,
+            "warning",
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching unmonitored patients:", error);
+        // Avoid alert spamming for this background fetch
+        // this.showAlert(`獲取未監測病患列表時發生錯誤: ${error.message}`, "danger");
       }
     },
 
