@@ -634,27 +634,47 @@ Vue.createApp({
       }
     },
 
-    async removePatientFromMonitor(patient) {
-      const [_, patient_password] = this.patientAccountsWithPasswords.find(
-        (p) => p[0] === patient,
-      );
+    async removePatientFromMonitor(patientAccount) {
+      if (!patientAccount) return;
 
-      const payload = {
-        event: this.events.REMOVE_PATIENT,
-        account: this.account,
-        password: this.password,
-        patient,
-      };
+      console.log(`Removing patient ${patientAccount} from monitor list...`);
+      try {
+        // Find the patient's password needed for the API call
+        const payload = {
+          event: this.events.REMOVE_PATIENT,
+          account: this.account,
+          password: this.password,
+          patient: patientAccount,
+        };
 
-      const { message } = await this.postRequest(payload);
+        const { message } = await this.postRequest(payload);
 
-      if (message === this.events.messages.REMOVE_PATIENT_SUCCESS) {
-        // TODO: Remove this console.log
-        console.log(message);
-
-        await this.syncMonitorData();
-      } else {
-        console.error(message);
+        if (message === this.events.messages.REMOVE_PATIENT_SUCCESS) {
+          console.log(`Patient ${patientAccount} removed from monitoring.`);
+          this.showAlert(
+            `已成功將 ${patientAccount} 從監測列表移除`,
+            "success",
+          );
+          // Refresh lists
+          await this.syncMonitorData();
+        } else {
+          console.error(
+            `Failed to remove ${patientAccount} from monitoring: ${message}`,
+          );
+          this.showAlert(
+            `從監測列表移除 ${patientAccount} 時失敗: ${message}`,
+            "danger",
+          );
+        }
+      } catch (error) {
+        console.error(
+          `Error removing ${patientAccount} from monitoring:`,
+          error,
+        );
+        this.showAlert(
+          `移除 ${patientAccount} 時發生錯誤: ${error.message}`,
+          "danger",
+        );
       }
     },
 
