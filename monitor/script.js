@@ -738,22 +738,29 @@ Vue.createApp({
       }
     },
 
-    async clearPatientData(patient, needConfirm = true) {
+    async clearPatientData(patientAccount, needConfirm = true) {
+      if (!patientAccount) return;
+
       if (needConfirm) {
         const confirmed = await this.showConfirm(
-          `確定要清除 ${patient} 的所有資料嗎?此操作無法還原。`,
+          `確定要清除 ${patientAccount} 的所有資料嗎?此操作無法還原。`,
         );
-        if (!confirmed) {
-          return;
-        }
+        if (!confirmed) return;
       }
 
+      console.log(`Clearing data for patient ${patientAccount}...`);
       try {
-        await this.updateRecords(patient, this.keysToFilter);
-        this.showAlert(`已成功清除 ${patient} 的所有資料`);
+        // Use the updateRecords function with the cleared data
+        await this.updateRecords(patientAccount, this.keysToFilter); // Default data
+        this.showAlert(`已成功清除 ${patientAccount} 的所有資料`, "success");
       } catch (error) {
-        console.error("Failed to clear patient data:", error);
-        this.showAlert(`清除 ${patient} 的資料時發生錯誤`, "danger");
+        // Error handling is done within updateRecords, but catch here just in case.
+        console.error(
+          `Failed to clear patient data for ${patientAccount}:`,
+          error,
+        );
+        // Alert might be redundant if updateRecords showed one already.
+        // this.showAlert(`清除 ${patientAccount} 的資料時發生錯誤`, "danger");
       }
     },
 
