@@ -200,7 +200,7 @@ Vue.createApp({
       } catch (error) {
         console.error("Failed to load config.json:", error);
         this.showAlert("無法載入應用程式設定，請稍後再試。", "danger");
-        // Potentially halt application Initialization here if config is critical
+        // Potentially halt application initialization here if config is critical
       }
     },
 
@@ -214,7 +214,7 @@ Vue.createApp({
       } catch (error) {
         console.error("Failed to load events.json:", error);
         this.showAlert("無法載入 API 事件設定，請稍後再試。", "danger");
-        // Potentially halt application Initialization here if events are critical
+        // Potentially halt application initialization here if events are critical
       }
     },
 
@@ -579,7 +579,7 @@ Vue.createApp({
     },
 
     // --- Search & Filtering ---
-    // Debounced method to filter patient list based on searchQuery
+    // Debounced method to filter patient list based on search query
     filterPatients: debounce(function () {
       const query = this.searchQuery.trim().toLowerCase();
       if (query === "") {
@@ -793,7 +793,7 @@ Vue.createApp({
 
       // --- Validations ---
       if (!toPatient) {
-        this.showAlert("請輸入目標帳號", "danger");
+        this.showAlert("請輸入目標帳號。", "danger");
         return;
       }
       if (fromPatient === toPatient) {
@@ -855,7 +855,7 @@ Vue.createApp({
         await this.updateRecords(toPatient, dataToTransfer);
         console.log(`Data successfully written to ${toPatient}.`);
 
-        // 2. Clear source patient's data on the backend (wihtout confirmation)
+        // 2. Clear source patient's data on the backend (without confirmation)
         await this.clearPatientData(this.transferFrom, false);
         console.log(`Data cleared for ${fromPatient}.`);
 
@@ -884,7 +884,7 @@ Vue.createApp({
       this.signUpPatientSubmitted = true; // Trigger validation feedback
       const form = document.getElementById("signUpForm"); // Give the form an id instead
 
-      if (from && form.checkValidity()) {
+      if (form && form.checkValidity()) {
         console.log("Signing up new patient:", this.signUpPatientAccount);
         try {
           const payload = {
@@ -898,7 +898,7 @@ Vue.createApp({
 
           if (response.message === this.events.messages.ACCT_CREATED) {
             // Check for specific success message
-            this.signUpAlertMessage = `病患帳號 ${this.signUpPatientAccount}註冊成功。`;
+            this.signUpAlertMessage = `病患帳號 ${this.signUpPatientAccount} 註冊成功。`;
             this.signUpAlertClass = "alert-success";
 
             // Auto-add to monitor if checked
@@ -997,7 +997,7 @@ Vue.createApp({
         const qrCodeContainer = document.getElementById("qrCodeContainer");
         if (!qrCodeContainer)
           throw new Error("QR Code container element not found.");
-        qrCodeContainer.innerHTML = ""; // Clear previous QR Code
+        qrCodeContainer.innerHTML = ""; // Clear previous QR code
 
         // Render to canvas
         const canvas = document.createElement("canvas");
@@ -1074,7 +1074,7 @@ Vue.createApp({
           this.showAlert("QR Code 圖片已複製到剪貼簿。", "success", 2000); // Shorter success message
         }
       } catch (error) {
-        console.error("Copy QR Code failed:", error);
+        console.error("Copy QR Code image failed:", error);
         this.showAlert(
           "複製 QR Code 失敗。請嘗試在圖片上按右鍵 -> 複製圖片。",
           "danger",
@@ -1097,7 +1097,7 @@ Vue.createApp({
 
         if (!printWindow) {
           this.showAlert(
-            "無法開啟列印視窗，請檢察您的彈出視窗攔截設定。",
+            "無法開啟列印視窗，請檢查您的彈出視窗攔截設定。",
             "warning",
           );
           return;
@@ -1183,14 +1183,14 @@ Vue.createApp({
 
     showConfirm(message) {
       this.confirmMessage = message;
-      this.confirming = true; // Set falg while modal is potentially visible
+      this.confirming = true; // Set flag while modal is potentially visible
 
       return new Promise((resolve) => {
         this.confirmResolver = resolve; // Store the resolver function
 
         const modalElement = document.getElementById("confirmModal");
         if (modalElement) {
-          // Ensure previous instances are handled if necessary, or just use getOrCreateInstance
+          // Ensure previous instances are handled if necessary, or use getOrCreateInstance
           const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
 
           // Add event listeners for modal close events to resolve promise as false
@@ -1221,7 +1221,7 @@ Vue.createApp({
       });
     },
 
-    /** Handles the result from teh confirmation modal button */
+    /** Handles the result from the confirmation modal buttons */
     handleConfirm(result) {
       // No need to manually hide the modal here if data-bs-dismiss="modal" is used on buttons.
       // The 'hidden.bs.modal' listener in showConfirm handles the closing case.
@@ -1229,7 +1229,7 @@ Vue.createApp({
         this.confirmResolver(result); // Resolve the promise with the button result (true/false)
         this.confirmResolver = null; // Clear resolver
       } else {
-        // This case might happen if teh modal was closed forecfully before a button was clikced
+        // This case might happen if the modal was closed forcefully before a button was clicked
         console.warn("Confirm button clicked, but no active resolver found.");
       }
       // The 'confirming' flag is reset by the 'hidden.bs.modal' listener.
