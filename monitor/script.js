@@ -738,35 +738,86 @@ Vue.createApp({
     },
 
     async removeRecord(target, patientAccount) {
-      this.confirming = true;
-      const [date, index] = target.attributes.id.textContent.split("-");
-      const record = this.patientRecords[patientAccount][date]["data"][index];
-      const confirmMessageLines = [
+      if (this.removingRecord || this.confirming) return; // Prevent concurrent removals
+
+      if (!target || !target.attributes || !target.attributes.id) return;
+      const idParts = target.attributes.id.textContent.split("-");
+      if (idParts.length !== 2) return;
+
+      const [dateKey, indexStr] = idParts;
+      const index = parseInt(indexStr);
+
+      if (!this.patientRecords[patientAccount]?.[dateKey]?.data?.[index]) {
+        console.error(
+          "Record not found for removal:",
+          patientAccount,
+          dateKey,
+          index,
+        );
+        return;
+      }
+
+      const record = this.patientRecords[patientAccount][dateKey].data[index];
+      const dateRecord = this.patientRecords[patientAccount][dateKey];
+
+      // --- Confirmation ---
+      this.confirming = true; // Prevent sync during confirmation
+      const dietaryItemsLabel = {
+        food: "進食",
+        water: "喝水",
+        urination: "排尿",
+        defecation: "排便",
+      };
+      const confirmMessage = [
         "請確認是否移除這筆資料:",
         `床號: ${patientAccount}`,
-        `日期: ${date.replaceAll("_", "/")}`,
-        `時間: ${record["time"]}`,
-        `進食: ${record["food"]}`,
-        `喝水: ${record["water"]}`,
-        `排尿: ${record["urination"]}`,
-        `排便: ${record["defecation"]}`,
-      ];
-      const confirmMessage = confirmMessageLines.join("\n");
+        `日期: ${dateKey.replaceAll(/_/g, "/")}`, // Display format
+        `時間: ${record.time}`,
+        ...this.dietaryItems.map(
+          (item) => `${dietaryItemsLabel[item]}: ${record[item] ?? 0}`,
+        ),
+      ].join("\n");
+
       const confirmed = await this.showConfirm(confirmMessage);
-      if (confirmed) {
-        this.removingRecord = true;
+      this.confirming = false; // Allow sync again after modal closes
 
-        this.patientRecords[patientAccount][date]["count"] -= 1;
-        for (const dietaryItem of this.dietaryItems) {
-          this.patientRecords[patientAccount][date][`${dietaryItem}Sum`] -=
-            record[dietaryItem];
-        }
-        this.patientRecords[patientAccount][date]["data"].splice(index, 1);
-
-        await this.updateRecords(patientAccount);
-        this.removingRecord = false;
+      if (!confirmed) {
+        console.log("Record removal cancelled.");
+        return;
       }
-      this.confirming = false;
+
+      // --- Removal Logic ---
+      console.log(
+        `Removing record: ${patientAccount} - ${dateKey} - Index ${index}`,
+      );
+      this.removingRecord = true; // Prevent other actions during API call
+
+      try {
+        // 1. Update local sums *before* removing the item
+        dateRecord.count = Math.max(0, dateRecord.count - 1); // Ensure count doesn't go below 0
+        this.dietaryItems.forEach((item) => {
+          const value = record[item] ?? 0; // Use 0 if value is null/undefined
+          dateRecord[`${item}Sum`] = Math.max(
+            0,
+            (dateRecord[`${item}Sum`] || 0) - value,
+          ); // Ensure sums don't go below 0
+        });
+
+        // 2. Remove the item from the local data array
+        dateRecord.data.splice(index, 1);
+
+        // 3. Update the backend with the modified patient record
+        await this.updateRecords(patientAccount); // Send the whole patient record again
+
+        this.showAlert("紀錄已成功移除。", "success");
+      } catch (error) {
+        console.error("Error during record removal:", error);
+        this.showAlert(`移除紀錄時發生錯誤: ${error.message}`, "danger");
+        // Re-sync data to ensure consistency after error
+        await this.syncMonitorData();
+      } finally {
+        this.removingRecord = false; // Allow actions again
+      }
     },
 
     // --- Restriction Editing ---
