@@ -912,24 +912,18 @@ Vue.createApp({
 
             // Hide modal after delay unless 'stayOpen' is checked
             if (!this.stayOpenAfterSignup) {
-              setTimeout(async () => {
+              setTimeout(() => {
                 const modalElement = document.getElementById("signUpModal");
                 if (modalElement) {
                   const modal = bootstrap.Modal.getInstance(modalElement);
                   if (modal) modal.hide();
-                  // Reset form and state
-                  this.signUpPatientAccount = "";
-                  this.signUpPatientPassword = "";
-                  this.signUpPatientSubmitted = false;
-                  this.signUpAlertMessage = "";
+                  // Reset state after modal is hidden
+                  this.resetSignUpForm();
                 }
               }, 1500); // Shorter delay for success
             } else {
               // Reset form immediately if staying open
-              this.signUpPatientAccount = "";
-              this.signUpPatientPassword = "";
-              this.signUpPatientSubmitted = false;
-              // Don't clear success message yet
+              this.resetSignUpForm(false); // Don't clear success message yet
               setTimeout(() => {
                 this.signUpAlertMessage = "";
               }, 3000); // Clear message later
@@ -958,6 +952,16 @@ Vue.createApp({
         // Generic message, but browser usually handles feedback
         this.signUpAlertMessage = "請填寫所有必填欄位。";
         this.signUpAlertClass = "alert-warning";
+      }
+    },
+
+    resetSignUpForm(clearMessage = true) {
+      this.signUpPatientAccount = "";
+      this.signUpPatientPassword = "";
+      this.signUpPatientSubmitted = false;
+      // Don't clear success message yet
+      if (clearMessage) {
+        this.signUpAlertMessage = "";
       }
     },
 
