@@ -778,31 +778,155 @@ Vue.createApp({
       // console.log("Filtered accounts:", this.filteredPatientAccounts);
     }, 200), // 200ms debounce delay
 
+    // --- Record Editing & Management ---
     async toggleRecordEdit(target, patientAccount) {
-      const [date, recordIndex] = target.attributes.id.textContent.split("-");
+      if (!target || !target.attributes || !target.attributes.id) return;
+      const idParts = target.attributes.id.textContent.split("-");
+      if (idParts.length !== 2) return;
+
+      const [dateKey, recordIndexStr] = idParts;
+      const recordIndex = parseInt(recordIndexStr);
+
+      // Ensure data exists
+      if (
+        !this.patientRecords[patientAccount]?.[dateKey]?.data?.[recordIndex]
+      ) {
+        console.error(
+          "Record data not found for editing:",
+          patientAccount,
+          dateKey,
+          recordIndex,
+        );
+        return;
+      }
+
       const record =
-        this.patientRecords[patientAccount][date]["data"][recordIndex];
+        this.patientRecords[patientAccount][dateKey].data[recordIndex];
+
       if (this.editingRecordIndex === -1) {
-        this.editingRecordIndex = parseInt(recordIndex);
-        this.editingRecordPatientAccount = patientAccount;
-        for (const dietaryItem of this.dietaryItems) {
-          this.tempPatientRecord[dietaryItem] = record[dietaryItem];
+        // --- Start Editing ---
+        // If another record is being edited, save it first (or discard changes?)
+        // For simplicity, we'll just prevent starting a new edit if one is active.
+        if (
+          this.editingRecordPatientAccount &&
+          this.editingRecordPatientAccount !== patientAccount
+        ) {
+          this.showAlert("請先儲存或取消目前正在編輯的其他紀錄。", "warning");
+          return;
         }
+        // If a restriction is being edited, prevent record editing
+        if (this.isEditingRestriction) {
+          this.showAlert("請先儲存或取消飲食限制的編輯。", "warning");
+          return;
+        }
+
+        console.log(
+          `Start editing record: ${patientAccount} - ${dateKey} - Index ${recordIndex}`,
+        );
+
+        this.editingRecordIndex = recordIndex;
+        this.editingRecordPatientAccount = patientAccount;
+        this.editingRecordDateKey = dateKey; // Store date key as well
+
+        // Store original values before editing starts
+        this.tempPatientRecord = {};
+        this.dietaryItems.forEach((item) => {
+          // Store the *current* value as the original value
+          this.tempPatientRecord[item] =
+            record[item] === "" ||
+            record[item] === null ||
+            isNaN(parseInt(record[item]))
+              ? 0
+              : parseInt(record[item]);
+          // Ensure the record has a valid number for editing input binding
+          record[item] = this.tempPatientRecord[item];
+        });
       } else {
+        // --- Finish Editing ---
+        // Check if the finished edit matches the *active* edit state
+        if (
+          this.editingRecordPatientAccount !== patientAccount ||
+          this.editingRecordDateKey !== dateKey ||
+          this.editingRecordIndex !== recordIndex
+        ) {
+          console.warn(
+            "Finished editing mismatch with current editing state. Ignoring.",
+          );
+          // This might happen with rapid clicks, better to ignore than corrupt data
+          return;
+        }
+
+        console.log(
+          `Finish editing record: ${patientAccount} - ${dateKey} - Index ${recordIndex}`,
+        );
+
+        // Validate inputs (ensure they are numbers >= 0)
+        let validationPassed = true;
+        this.dietaryItems.forEach((item) => {
+          const value = record[item];
+          if (
+            value === "" ||
+            value === null ||
+            isNaN(parseInt(value)) ||
+            parseInt(value) < 0
+          ) {
+            record[item] = 0; // Default to 0 if invalid
+            console.warn(`Invalid input for ${item}, defaulting to 0.`);
+          } else {
+            record[item] = parseInt(value); // Ensure it's stored as a number
+          }
+          // Check against original value
+          if (record[item] < 0) {
+            // Should be caught above, but double check
+            validationPassed = false;
+          }
+        });
+
+        if (!validationPassed) {
+          this.showAlert("輸入值必須為 0 或正整數。", "danger");
+          // Consider revert to temp values or just keep the corrected '0'
+          // Reverting:
+          // this.dietaryItems.forEach(item => {
+          //     record[item] = this.tempPatientRecord[item];
+          // });
+          return; // Prevent saving invalid state
+        }
+
+        // Calculate the difference and update sums BEFORE resetting edit state
+        const dateRecord = this.patientRecords[patientAccount][dateKey];
+        let dataChanged = false;
+        this.dietaryItems.forEach((item) => {
+          const newValue = record[item]; // Already parsed to int
+          const oldValue = this.tempPatientRecord[item]; // Stored original value
+          const diff = newValue - oldValue;
+          if (diff !== 0) {
+            dateRecord[`${item}Sum`] = (dateRecord[`${item}Sum`] || 0) + diff;
+            dataChanged = true;
+          }
+        });
+
+        // Reset editing state *before* potentially async operations
+        const wasEditingPatient = this.editingRecordPatientAccount;
         this.editingRecordIndex = -1;
         this.editingRecordPatientAccount = "";
-        for (const dietaryItem of this.dietaryItems) {
-          if (record[dietaryItem] === "") {
-            record[dietaryItem] = 0;
-          }
-          this.patientRecords[patientAccount][date][`${dietaryItem}Sum`] +=
-            record[dietaryItem] - this.tempPatientRecord[dietaryItem];
-        }
-        await this.updateRecords(patientAccount);
-        if (
-          this.dietaryItems.every((dietaryItem) => record[dietaryItem] === 0)
-        ) {
+        this.editingRecordDateKey = "";
+        this.tempPatientRecord = {};
+
+        // If all values are zero after editing, ask to remove the record
+        const allZero = this.dietaryItems.every((item) => record[item] === 0);
+
+        if (allZero && dataChanged) {
+          // Only remove if it wasn't zero initially and changed
+          console.log("Record edited to all zeros, prompting for removal.");
+          // Use the same target element for removeRecord
+          // Need to set confirming flag here? removeRecord does it.
           await this.removeRecord(target, patientAccount);
+        } else if (dataChanged) {
+          // Update records on the server only if data actually changed
+          console.log("Record data changed, updating server.");
+          await this.updateRecords(wasEditingPatient);
+        } else {
+          console.log("Record data not changed, no server update needed.");
         }
       }
     },
