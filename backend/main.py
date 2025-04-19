@@ -258,6 +258,19 @@ async def handle_request(request: Request):
 
             return {"message": ADD_PATIENT_SUCCESS}
 
+        elif event == REMOVE_PATIENT:
+            account_relations = load_json_file(ACCT_REL_JSON_PATH)
+            patient_accounts = account_relations["monitor_accounts"][
+                monitor_account
+            ]
+            if patient in patient_accounts:
+                del account_relations["monitor_accounts"][monitor_account][
+                    patient_accounts.index(patient)
+                ]
+            write_json_file(ACCT_REL_JSON_PATH, account_relations)
+
+            return {"message": REMOVE_PATIENT_SUCCESS}
+
         if "patient_password" not in post_request:
             return {"message": MISSING_PARAMETER}
 
@@ -274,19 +287,6 @@ async def handle_request(request: Request):
 
         if db.get_account_type(patient) != db.AccountType.PATIENT:
             return {"message": INVALID_ACCT_TYPE}
-
-        if event == REMOVE_PATIENT:
-            account_relations = load_json_file(ACCT_REL_JSON_PATH)
-            patient_accounts = account_relations["monitor_accounts"][
-                monitor_account
-            ]
-            if patient in patient_accounts:
-                del account_relations["monitor_accounts"][monitor_account][
-                    patient_accounts.index(patient)
-                ]
-            write_json_file(ACCT_REL_JSON_PATH, account_relations)
-
-            return {"message": REMOVE_PATIENT_SUCCESS}
 
         if event == DELETE_PATIENT:
             err = db.delete_account(patient)
