@@ -373,24 +373,56 @@ Vue.createApp({
       }
     },
 
+    /** Processes data fetched from the FETCH_MONITORING_PATIENTS event */
     processFetchedData(fetchedData) {
-      this.patientRecords = fetchedData["patient_records"];
-      this.patientAccountsWithPasswords = fetchedData["patient_accounts"];
+      if (
+        !fetchedData ||
+        !fetchedData.patient_records ||
+        !fetchedData.patient_accounts
+      ) {
+        console.error(
+          "Invalid data received in processFetchedData:",
+          fetchedData,
+        );
+        this.showAlert("從伺服器接收到的資料格式不正確。", "danger");
+        return;
+      }
+
+      this.patientRecords = fetchedData.patient_records;
+      this.patientAccountsWithPasswords = fetchedData.patient_accounts;
       // NOTE: monitoredPatientAccounts computed property will update automatically
 
-      this.monitoredPatientAccounts.forEach((patientAccount) => {
+      // Ensure essential filter/control keys exist for each patient
+      this.monitoredPatientAccounts.forEach(async (patientAccount) => {
         let modified = false;
-        Object.entries(this.keysToFilter).forEach(([key, value]) => {
-          if (!(key in this.patientRecords[patientAccount])) {
-            this.patientRecords[patientAccount][key] = value;
-            modified = true;
-          }
-        });
-        if (modified) {
-          this.updateRecords(patientAccount);
+        if (!this.patientRecords[patientAccount]) {
+          console.warn(
+            `No record found for patient ${patientAccount} during processing, initializing.`,
+          );
+          this.patientRecords[patientAccount] = {}; // Initialize if missing
         }
+        const record = this.patientRecords[patientAccount];
+        for (const key in this.keysToFilter) {
+          if (!(key in record)) {
+            record[key] = this.keysToFilter[key]; // Assign default value
+            modified = true;
+            console.log(
+              `Added missing key '${key}' for patient ${patientAccount}`,
+            );
+          }
+        }
+        // Update restriction text based on potentially newly added/existing keys
         this.updateRestrictionText(patientAccount);
+
+        // Persist changes ONLY if defaults were added
+        if (modified) {
+          console.log(
+            `Updating records for ${patientAccount} after adding default keys.`,
+          );
+          await this.updateRecords(patientAccount, record); // Update backend with the defaults
+        }
       });
+      console.log("Patient data processed.");
     },
 
     /** Checks if data synchronization can proceed */
