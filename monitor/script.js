@@ -741,76 +741,106 @@ Vue.createApp({
     // --- Data Transfer ---
     openTransferModal(fromPatient) {
       this.transferFrom = fromPatient;
-      this.transferTo = "";
-      const transferModal = document.getElementById("transferModal");
-      const modal = new bootstrap.Modal(transferModal);
-      modal.show();
+      this.transferTo = ""; // Reset target field
+      const modalElement = document.getElementById("transferModal");
+      if (modalElement) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
+      } else {
+        console.error("Transfer modal element not found.");
+      }
     },
 
     async transferPatientData() {
-      if (!this.transferTo.trim()) {
+      const fromPatient = this.transferFrom;
+      const toPatient = this.transferTo.trim();
+
+      // --- Validations ---
+      if (!toPatient) {
         this.showAlert("請輸入目標帳號", "danger");
         return;
       }
+      if (fromPatient === toPatient) {
+        this.showAlert("來源和目標帳號不能相同。", "danger");
+        return;
+      }
 
-      const isTargetMonitored = this.monitoredPatientAccounts.includes(
-        this.transferTo,
-      );
-      const isTargetUnmonitored = this.unmonitoredPatients.includes(
-        this.transferTo,
-      );
+      const isTargetMonitored =
+        this.monitoredPatientAccounts.includes(toPatient);
+      const isTargetUnmonitored = this.unmonitoredPatients.includes(toPatient);
 
       if (!isTargetMonitored && !isTargetUnmonitored) {
-        this.showAlert("欲轉移目標帳號不存在", "danger");
+        this.showAlert("目標帳號不存在。", "danger");
         return;
       }
 
       if (isTargetUnmonitored) {
         this.showAlert(
-          "目標帳號尚未加入監測，請先加入監測後再移轉資料",
+          "目標帳號尚未加入監測，請先將其加入監測列表後再進行轉移。",
+          "warning",
+        );
+        return;
+      }
+
+      // Check if target patient *already has data* (excluding control keys)
+      const targetData = this.patientRecords[toPatient];
+      let targetHasExistingData = false;
+      if (targetData) {
+        targetHasExistingData = Object.keys(targetData).some(
+          (key) => !this.keysToFilter.hasOwnProperty(key),
+        );
+      }
+
+      if (targetHasExistingData) {
+        this.showAlert(
+          "目標帳號已有資料，無法轉移。請先清除目標帳號的資料",
           "danger",
         );
         return;
       }
 
-      const targetData = this.patientRecords[this.transferTo];
-      const keys = Object.keys(targetData || {});
-      const defaultKeys = [
-        "isEditing",
-        "limitAmount",
-        "foodCheckboxChecked",
-        "waterCheckboxChecked",
-      ];
-      const isOnlyDefaultKeys =
-        keys.length === defaultKeys.length &&
-        keys.every((k) => defaultKeys.includes(k));
-
-      if (targetData && !isOnlyDefaultKeys) {
-        this.showAlert("目標帳號已有資料，無法轉移，請先清除資料", "danger");
-        return;
-      }
-
+      // --- Confirmation ---
       const confirmed = await this.showConfirm(
-        `確定要將 ${this.transferFrom} 的資料轉移到 ${this.transferTo} 嗎?`,
+        `確定要將 ${fromPatient} 的資料轉移到 ${toPatient} 嗎?`,
       );
       if (!confirmed) return;
 
-      // Transfer
-      await this.updateRecords(
-        this.transferTo,
-        this.patientRecords[this.transferFrom],
+      // --- Transfer Process ---
+      console.log(
+        `Starting data transfer from ${fromPatient} to ${toPatient}...`,
       );
+      try {
+        const dataToTransfer = this.patientRecords[fromPatient];
+        if (!dataToTransfer) {
+          throw new Error(`找不到來源帳號 ${fromPatient} 的資料。`);
+        }
 
-      // Clear
-      await this.clearPatientData(this.transferFrom, false);
+        // 1. Update target patient's record on the backend
+        await this.updateRecords(toPatient, dataToTransfer);
+        console.log(`Data successfully written to ${toPatient}.`);
 
-      this.showAlert(
-        `資料已成功從 ${this.transferFrom} 轉移到 ${this.transferTo}`,
-      );
-      bootstrap.Modal.getInstance(
-        document.getElementById("transferModal"),
-      ).hide();
-      await this.syncMonitorData();
+        // 2. Clear source patient's data on the backend (wihtout confirmation)
+        await this.clearPatientData(this.transferFrom, false);
+        console.log(`Data cleared for ${fromPatient}.`);
+
+        // 3. Hide modal and show success message
+        const modalElement = document.getElementById("transferModal");
+        if (modalElement) {
+          const modal = bootstrap.Modal.getInstance(modalElement);
+          if (modal) modal.hide();
+        }
+        this.showAlert(
+          `資料已成功從 ${fromPatient} 轉移到 ${toPatient}`,
+          "success",
+        );
+
+        // 4. Refresh data
+        await this.syncMonitorData();
+      } catch (error) {
+        console.error("Data transfer failed:", error);
+        this.showAlert(`資料轉移失敗: ${error.message}`, "danger");
+        // TODO: Consider if partial transfer requires manual cleanup or retry
+      }
     },
 
     // --- Sign Up ---
