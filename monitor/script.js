@@ -393,29 +393,69 @@ Vue.createApp({
       });
     },
 
+    /** Checks if data synchronization can proceed */
+    canSyncData() {
+      if (!this.authenticated) return false;
+      if (this.isEditingRestriction) return false; // Don't sync while editing restriction details
+      if (this.editingRecordIndex !== -1) return false; // Don't sync while editing a specific record row
+      if (this.confirming) return false; // Don't sync while a confirmation modal is active
+      if (this.removingRecord) return false; // Don't sync while actively removing a record (API call in progress)
+      // Add other conditions if needed
+      return true;
+    },
+
+    /** Fetches latest monitored patient data if conditions allow */
     async syncMonitorData() {
-      if (!this.authenticated) return;
-      if (
-        !this.isEditingRestriction &&
-        this.editingRecordIndex === -1 &&
-        !this.confirming
-      ) {
-        const fetchedData = await this.postRequest({
+      if (!this.canSyncData()) {
+        // console.log("Sync skipped due to active user interaction.");
+        return;
+      }
+
+      // console.log("Syncing monitor data...");
+      try {
+        const payload = {
           event: this.events.FETCH_MONITORING_PATIENTS,
           account: this.account,
           password: this.password,
-        });
+        };
+        const fetchedData = await this.postRequest(payload);
+
+        // Double-check condition *after* await, in case state changed
         if (
-          !this.confirming &&
-          Object.hasOwn(fetchedData, "message") &&
+          this.canSyncData() &&
           fetchedData.message ===
             this.events.messages.FETCH_MONITORING_PATIENTS_SUCCESS
         ) {
           this.processFetchedData(fetchedData);
           // No need to call filterPatients here, watcher will handle it if monitoredPatientAccounts changes
+        } else if (
+          fetchedData.message &&
+          fetchedData.message !==
+            this.events.messages.FETCH_MONITORING_PATIENTS_SUCCESS
+        ) {
+          // Handle potential errors during sync (e.g., permissions changed)
+          console.warn("Sync failed with message:", fetchedData.message);
+          // Maybe show a less intrusive alert or handle specific errors like re-authentication needed
+          this.showAlert(`資料同步失敗: ${fetchedData.message}`, "warning"); // Use warning level
+          if (
+            fetchedData.message === this.events.messages.AUTH_FAIL_PASSWORD ||
+            fetchedData.message === this.events.messages.ACCT_NOT_EXIST
+          ) {
+            this.authenticated = false; // Force re-login
+            this.stopSyncInterval();
+          }
+        }
+      } catch (error) {
+        console.error("Error during syncMonitorData:", error);
+        // Avoid spamming alerts on intermittent network errors during sync
+        // this.showAlert(`資料同步時發生錯誤: ${error.message}`, "danger");
+      } finally {
+        // Always try to fetch the unmonitored list, even if monitored sync fails/is skipped
+        // Unless authentication itself failed
+        if (this.authenticated) {
+          await this.fetchUnmonitoredPatients();
         }
       }
-      await this.fetchUnmonitoredPatients();
     },
 
     startSyncInterval() {
