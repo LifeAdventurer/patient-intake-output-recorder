@@ -35,7 +35,6 @@ Vue.createApp({
       filteredPatientAccounts: [], // Derived from patientAccounts based on searchQuery
 
       // --- Editing / Interaction State ---
-      currentDateMMDD: "",
       editingRecordIndex: -1, // Index of the record being edited within a date's data array
       editingRecordPatientAccount: "", // Which patient's record is being edited
       tempPatientRecord: {}, // Holds original values while editing a record
