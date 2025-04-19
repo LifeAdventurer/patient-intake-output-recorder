@@ -600,20 +600,37 @@ Vue.createApp({
       }
     },
 
-    async addPatientToMonitor(patient) {
-      const payload = {
-        event: this.events.ADD_PATIENT,
-        account: this.account,
-        password: this.password,
-        patient: patient,
-      };
-      const { message } = await this.postRequest(payload);
-      if (message === this.events.messages.ADD_PATIENT_SUCCESS) {
-        // TODO: Remove this console.log
-        console.log(message);
-        await this.fetchUnmonitoredPatients();
-      } else {
-        console.error(message);
+    async addPatientToMonitor(patientAccount) {
+      if (!patientAccount) return;
+      console.log(`Adding patient ${patientAccount} to monitor list...`);
+      try {
+        const payload = {
+          event: this.events.ADD_PATIENT,
+          account: this.account,
+          password: this.password,
+          patient: patientAccount,
+        };
+        const { message } = await this.postRequest(payload);
+
+        if (message === this.events.messages.ADD_PATIENT_SUCCESS) {
+          console.log(`Patient ${patientAccount} added successfully.`);
+          this.showAlert(`已成功將 ${patientAccount} 加入監測列表`, "success");
+          // Refresh both lists after adding
+          await this.syncMonitorData(); // Gets monitored list (including new one)
+          // fetchUnmonitored is called within syncMonitorData's finally block
+        } else {
+          console.error(`Failed to add patient ${patientAccount}: ${message}`);
+          this.showAlert(
+            `將 ${patientAccount} 加入監測列表時失敗: ${message}`,
+            "danger",
+          );
+        }
+      } catch (error) {
+        console.error(`Error adding patient ${patientAccount}:`, error);
+        this.showAlert(
+          `將 ${patientAccount} 加入監測列表時發生錯誤: ${error.message}`,
+          "danger",
+        );
       }
     },
 
