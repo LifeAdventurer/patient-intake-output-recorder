@@ -517,23 +517,50 @@ Vue.createApp({
       }
     },
 
+    /** Updates the entire record data for a specific patient on the backend */
     async updateRecords(
       patientAccount,
       record = this.patientRecords[patientAccount],
     ) {
-      const payload = {
-        event: this.events.UPDATE_RECORD,
-        account: this.account,
-        password: this.password,
-        patient: patientAccount,
-        data: record,
-      };
-      const { message } = await this.postRequest(payload);
-      if (message === this.events.messages.UPDATE_RECORD_SUCCESS) {
-        // TODO: Remove this console.log
-        console.log(message);
-      } else {
-        console.error("Error:", message);
+      if (!record) {
+        console.error(
+          `Attempted to update records for ${patientAccount}, but no record data found.`,
+        );
+        return;
+      }
+      console.log(`Sending update for ${patientAccount}...`);
+      try {
+        const payload = {
+          event: this.events.UPDATE_RECORD,
+          account: this.account,
+          password: this.password,
+          patient: patientAccount,
+          data: record, // Send the entire patient record object
+        };
+        const { message } = await this.postRequest(payload);
+
+        if (message === this.events.messages.UPDATE_RECORD_SUCCESS) {
+          console.log(`Successfully updated records for ${patientAccount}.`);
+          // Consider to provide subtle feedback on success
+        } else {
+          console.error(
+            `Failed to update records for ${patientAccount}: ${message}`,
+          );
+          this.showAlert(
+            `更新 ${patientAccount} 的紀錄時失敗: ${message}`,
+            "danger",
+          );
+          // Potentially revert local changes or re-sync to get server state
+          await this.syncMonitorData();
+        }
+      } catch (error) {
+        console.error(`Error updating records for ${patientAccount}:`, error);
+        this.showAlert(
+          `更新 ${patientAccount} 紀錄時發生網路錯誤: ${error.message}`,
+          "danger",
+        );
+        // Potentially revert local changes or re-sync
+        await this.syncMonitorData();
       }
     },
 
