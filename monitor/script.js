@@ -678,36 +678,63 @@ Vue.createApp({
       }
     },
 
-    async deletePatient(patient) {
+    async deletePatient(patientAccount) {
+      if (!patientAccount) return;
+
       const confirmed = await this.showConfirm(
-        `請確認病患: ${patient} 是否要出院?`,
+        `請確認病患: ${patientAccount} 是否要出院?\n這將清除該病患的所有紀錄且無法復原！\n\n如果您只是想暫時停止監測，請使用「移除監測」功能。`,
       );
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
 
-      const [_, patient_password] = this.patientAccountsWithPasswords.find(
-        (p) => p[0] === patient,
-      );
+      // Consider second confirmation for safety (For destructive actions)
+      // const finalConfirmation = prompt(`請輸入病患帳號 "${patientAccount}" 以確認刪除：`);
+      // if (finalConfirmation !== patientAccount) {
+      //     this.showAlert("取消刪除操作。", "info");
+      //     return;
+      // }
 
-      const payload = {
-        event: this.events.DELETE_PATIENT,
-        account: this.account,
-        password: this.password,
-        patient,
-        patient_password: patient_password,
-      };
+      console.log(`Deleting patient ${patientAccount}...`);
+      try {
+        const patientInfo = this.patientAccountsWithPasswords.find(
+          (p) => p[0] === patientAccount,
+        );
+        if (!patientInfo) {
+          throw new Error("找不到該病患的驗證資訊。");
+        }
+        const patientPassword = patientInfo[1];
 
-      const { message } = await this.postRequest(payload);
+        const payload = {
+          event: this.events.DELETE_PATIENT,
+          account: this.account,
+          password: this.password,
+          patient: patientAccount,
+          patient_password: patientPassword,
+        };
+        const { message } = await this.postRequest(payload);
 
-      if (message === this.events.messages.DELETE_PATIENT_SUCCESS) {
-        // TODO: Remove this console.log
-        console.log(message);
-
-        // Refresh lists thoroughly
-        await this.syncMonitorData();
-      } else {
-        console.error(message);
+        if (message === this.events.messages.DELETE_PATIENT_SUCCESS) {
+          console.log(`Patient ${patientAccount} deleted successfully.`);
+          this.showAlert(
+            `已成功刪除病患 ${patientAccount} 及其所有資料`,
+            "success",
+          );
+          // Refresh lists thoroughly
+          await this.syncMonitorData();
+        } else {
+          console.error(
+            `Failed to delete patient ${patientAccount}: ${message}`,
+          );
+          this.showAlert(
+            `刪除病患 ${patientAccount} 時失敗: ${message}`,
+            "danger",
+          );
+        }
+      } catch (error) {
+        console.error(`Error deleting patient ${patientAccount}:`, error);
+        this.showAlert(
+          `刪除病患 ${patientAccount} 時發生錯誤: ${error.message}`,
+          "danger",
+        );
       }
     },
 
