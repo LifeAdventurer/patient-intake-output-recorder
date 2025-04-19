@@ -655,86 +655,122 @@ Vue.createApp({
 
     // --- Restriction Editing ---
     updateRestrictionText(patientAccount) {
-      const limitAmount = String(
-        this.patientRecords[patientAccount]["limitAmount"],
-      ).trim();
-      if (!isNaN(limitAmount) && limitAmount !== "") {
-        let text;
-        if (
-          this.patientRecords[patientAccount]["foodCheckboxChecked"] &&
-          this.patientRecords[patientAccount]["waterCheckboxChecked"]
-        ) {
-          text = `限制進食加喝水不超過${
-            this.patientRecords[patientAccount]["limitAmount"]
-          }公克`;
-        } else if (this.patientRecords[patientAccount]["foodCheckboxChecked"]) {
-          text = `限制進食不超過${
-            this.patientRecords[patientAccount]["limitAmount"]
-          }公克`;
-        } else if (
-          this.patientRecords[patientAccount]["waterCheckboxChecked"]
-        ) {
-          text = `限制喝水不超過${
-            this.patientRecords[patientAccount]["limitAmount"]
-          }公克`;
+      const record = this.patientRecords[patientAccount];
+      if (!record) return;
+
+      const limitAmountStr = String(record.limitAmount ?? "").trim();
+      const foodChecked = record.foodCheckboxChecked ?? false;
+      const waterChecked = record.waterCheckboxChecked ?? false;
+      let text = "";
+
+      if (
+        !isNaN(parseInt(limitAmountStr)) &&
+        limitAmountStr !== "" &&
+        (foodChecked || waterChecked)
+      ) {
+        const limitAmount = parseInt(limitAmountStr);
+        if (foodChecked && waterChecked) {
+          text = `限制 食物+水 < ${limitAmount} g/ml`;
+        } else if (foodChecked) {
+          text = `限制 食物 < ${limitAmount} g/ml`;
+        } else if (waterChecked) {
+          text = `限制 水 < ${limitAmount} g/ml`;
         }
-        this.restrictionText[patientAccount] = text;
+      }
+
+      this.restrictionText[patientAccount] = text;
+    },
+
+    /** Handles input for restriction amount, ensuring it's a non-negative integer */
+    handleRestrictionInput(event, patientAccount) {
+      let value = event.target.value;
+      // Allow empty string, or positive numbers (including decimals if needed)
+      if (value === "" || (!isNaN(parseInt(value)) && parseInt(value) >= 0)) {
+        this.patientRecords[patientAccount].limitAmount = value;
       } else {
-        this.restrictionText[patientAccount] = "";
+        // If invalid input, consider revert to the previous valid value or show an error
+        console.warn("Invalid restriction amount input:", value);
       }
     },
 
-    handleInput(value, patientAccount) {
-      const intValue = parseInt(value);
-      if (!isNaN(intValue)) {
-        this.patientRecords[patientAccount]["limitAmount"] = intValue;
-      }
-    },
+    /** Toggles the edit mode for intake restrictions */
+    async toggleRestrictionEdit(patientAccount) {
+      if (!this.patientRecords[patientAccount]) return;
 
-    toggleRestrictionEdit(patientAccount) {
-      const limitAmount = String(
-        this.patientRecords[patientAccount]["limitAmount"],
-      ).trim();
-      if (this.patientRecords[patientAccount]["isEditing"]) {
-        if (
-          !this.patientRecords[patientAccount]["foodCheckboxChecked"] &&
-          !this.patientRecords[patientAccount]["waterCheckboxChecked"]
-        ) {
-          if (isNaN(limitAmount)) {
-            this.showAlert("請勾選選項並輸入數字", "danger");
-            return;
-          } else if (limitAmount !== "") {
-            this.showAlert("請勾選選項", "danger");
-            return;
+      const record = this.patientRecords[patientAccount];
+      const isCurrentlyEditingThis = record.isEditing;
+
+      if (isCurrentlyEditingThis) {
+        console.log(`Attempting to save restriction for ${patientAccount}`);
+        const limitAmountStr = String(record.limitAmount ?? "").trim();
+        const foodChecked = record.foodCheckboxChecked ?? false;
+        const waterChecked = record.waterCheckboxChecked ?? false;
+        let isValid = true;
+        let errorMsg = "";
+
+        // Validate: If any checkbox is checked, amount must be a valid non-negative integer.
+        // If no checkbox is checked, amount should ideally be empty (or ignored).
+        if (foodChecked || waterChecked) {
+          if (
+            limitAmountStr === "" ||
+            isNaN(parseInt(limitAmountStr)) ||
+            parseInt(limitAmountStr) < 0
+          ) {
+            isValid = false;
+            errorMsg = "以勾選限制項目，請輸入有效的限制數值(大於等於0)。";
+          } else {
+            // Ensure stored value is numeric if valid
+            record.limitAmount = parseInt(limitAmountStr);
           }
-        } else if (isNaN(limitAmount) || limitAmount === "") {
-          this.showAlert("請輸入數字", "danger");
-          return;
-        } else if (limitAmount.startsWith("-") || limitAmount.startsWith(".")) {
-          this.showAlert("請輸入正整數", "danger");
+        } else {
+          // No checkboxes checked, clear the amount for consistency?
+          // record.limitAmount = "";
+        }
+
+        if (!isValid) {
+          this.showAlert(errorMsg, "danger");
           return;
         }
-      }
-      this.patientRecords[patientAccount]["isEditing"] =
-        !this.patientRecords[patientAccount]["isEditing"];
-      if (!this.patientRecords[patientAccount]["isEditing"]) {
-        if (limitAmount !== "") {
-          this.updateRestrictionText(patientAccount);
-          this.currentEditingPatient = "";
-        }
-        this.updateRecords(patientAccount);
-        this.isEditingRestriction = false;
+
+        // --- Validation Passed ---
+        record.isEditing = false; // Turn off editing mode locally first
+        this.isEditingRestriction = false; // Turn off global flag
+        this.currentEditingPatient = "";
+        this.updateRestrictionText(patientAccount); // Update display text
+        await this.updateRecords(patientAccount); // Save changes to backend
+        console.log(`Restriction saved for ${patientAccount}`);
       } else {
-        this.isEditingRestriction = true;
+        // --- Start Editing Restriction ---
+        // If another restriction is being edited, save it first
         if (
-          this.currentEditingPatient !== "" &&
-          patientAccount !== this.currentEditingPatient
+          this.isEditingRestriction &&
+          this.currentEditingPatient !== patientAccount
         ) {
-          this.patientRecords[this.currentEditingPatient]["isEditing"] = false;
-          this.updateRestrictionText(this.currentEditingPatient);
-          this.updateRecords(this.currentEditingPatient);
+          // Find the other patient's record and try to save it
+          const otherPatientRecord =
+            this.patientRecords[this.currentEditingPatient];
+          if (otherPatientRecord && otherPatientRecord.isEditing) {
+            // Attempt to save the other one silently or prompt?
+            // Currently just revert the other one without saving
+            console.warn(
+              `Cancelling restriction edit for ${this.currentEditingPatient} to edit ${patientAccount}`,
+            );
+            otherPatientRecord.isEditing = false; // Revert state
+            this.updateRestrictionText(this.currentEditingPatient); // Update its text
+            // No API call needed as changes are discarded
+          }
         }
+        // If a record row is being edited, prevent restriction editing
+        if (this.editingRecordIndex !== -1) {
+          this.showAlert("請先儲存或取消目前正在編輯的紀錄。", "warning");
+          return;
+        }
+
+        console.log(`Start editing restriction for ${patientAccount}`);
+        record.isEditing = true;
+        this.isEditingRestriction = true;
         this.currentEditingPatient = patientAccount;
+        // No API call needed yet, just changing local state
       }
     },
 

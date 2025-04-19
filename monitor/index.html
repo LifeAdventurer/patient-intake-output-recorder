@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
 
     <title>Patient Intake/Output Recorder</title>
 
-    <link rel="icon" href="../images/PIOR_logo-512x512.png">
+    <link rel="icon" href="../images/PIOR_logo-512x512.png" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css"
@@ -31,10 +31,20 @@
         v-if="bootstrapAlertMessage"
         :class="['alert', bootstrapAlertClass, 'alert-dismissible', 'fade', 'show']"
         role="alert"
-        style="position: fixed; top: 20px; right: 20px; z-index: 10050; min-width: 200px;"
+        style="
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 10050;
+          min-width: 200px;
+        "
       >
         {{ bootstrapAlertMessage }}
-        <button type="button" class="btn-close" @click="bootstrapAlertMessage = ''"></button>
+        <button
+          type="button"
+          class="btn-close"
+          @click="bootstrapAlertMessage = ''"
+        ></button>
       </div>
       <template v-if="!authenticated">
         <div class="row mt-1">
@@ -91,7 +101,8 @@
                   Code licensed
                   <a
                     href="https://github.com/LifeAdventurer/patient-intake-output-recorder/blob/main/LICENSE"
-                  >GPL-3.0</a>
+                    >GPL-3.0</a
+                  >
                 </p>
               </div>
               <div class="col-md-2 col-6 text-muted">
@@ -138,7 +149,10 @@
                 註冊
               </button>
             </div>
-            <div class="col-5 col-md-1 position-absolute top-0 end-0 mt-1 mx-4 fw-bold text-end" style="font-size: 24px">
+            <div
+              class="col-5 col-md-1 position-absolute top-0 end-0 mt-1 mx-4 fw-bold text-end"
+              style="font-size: 24px"
+            >
               {{ currentTime }}
             </div>
           </div>
@@ -194,7 +208,8 @@
                           <label
                             class="form-check-label"
                             :for="'food-checkbox-' + index"
-                          >吃</label>
+                            >吃</label
+                          >
                         </div>
                         <div class="form-check">
                           <input
@@ -206,13 +221,14 @@
                           <label
                             class="form-check-label"
                             :for="'water-checkbox-' + index"
-                          >水</label>
+                            >水</label
+                          >
                         </div>
                       </div>
                       <input
                         v-if="patientRecords[patientAccount]['isEditing']"
                         v-model="patientRecords[patientAccount]['limitAmount']"
-                        @input="handleInput($event.target.value, patientAccount)"
+                        @input="handleRestrictionInput($event, patientAccount)"
                         type="text"
                         class="form-control"
                         pattern="^[1-9][0-9]*$"
@@ -312,7 +328,8 @@
                                 <b>所有紀錄</b>
                               </div>
                               <div class="col-6" style="white-space: nowrap">
-                                <b>{{ getFirstAndLastDates(patientAccount) }}</b
+                                <b
+                                  >{{ getFirstAndLastDates(patientAccount) }}</b
                                 >
                               </div>
                             </div>
@@ -348,30 +365,45 @@
                                         <div class="row">
                                           <div
                                             class="col-4"
-                                            style="font-size: 20px; margin-left: -10px"
+                                            style="
+                                              font-size: 20px;
+                                              margin-left: -10px;
+                                            "
                                           >
                                             <div class="recordDate">
-                                              <b>{{ dailyRecord['recordDate']
-                                                }}</b>
+                                              <b
+                                                >{{ dailyRecord['recordDate']
+                                                }}</b
+                                              >
                                             </div>
                                           </div>
                                           <div
                                             class="col-6"
-                                            style="font-size: 18px; margin-left: 6px"
+                                            style="
+                                              font-size: 18px;
+                                              margin-left: 6px;
+                                            "
                                           >
                                             <div class="weight">
-                                              <b>體重: {{ dailyRecord['weight']
+                                              <b
+                                                >體重: {{ dailyRecord['weight']
                                                 == 'NaN' ? '未測量' :
-                                                dailyRecord['weight'] }}</b>
+                                                dailyRecord['weight'] }}</b
+                                              >
                                             </div>
                                           </div>
                                           <div
                                             class="col-2"
-                                            style="white-space: nowrap; font-size: 18px"
+                                            style="
+                                              white-space: nowrap;
+                                              font-size: 18px;
+                                            "
                                           >
                                             <div class="count">
-                                              <b>{{ dailyRecord['count']
-                                                }}筆資料</b>
+                                              <b
+                                                >{{ dailyRecord['count']
+                                                }}筆資料</b
+                                              >
                                             </div>
                                           </div>
                                         </div>
@@ -424,7 +456,10 @@
                                                 </td>
                                                 <td
                                                   class="justify-content-center align-items-center"
-                                                  style="text-align: center; padding: 8px"
+                                                  style="
+                                                    text-align: center;
+                                                    padding: 8px;
+                                                  "
                                                 >
                                                   <i
                                                     @click="toggleRecordEdit($event.target, patientAccount)"
@@ -492,9 +527,7 @@
             帳號: {{ account }}
           </h4>
           <div class="col-md-2 offset-md-0 col-4 offset-2" id="logout">
-            <button class="btn btn-dark" @click="confirmLogout">
-              登出
-            </button>
+            <button class="btn btn-dark" @click="confirmLogout">登出</button>
           </div>
         </div>
         <button
@@ -523,8 +556,7 @@
                   class="btn-close"
                   data-bs-dismiss="modal"
                   aria-label="關閉"
-                >
-                </button>
+                ></button>
               </div>
               <div class="modal-body">
                 <div
@@ -543,7 +575,8 @@
                 >
                   <div class="mb-3">
                     <label for="signUpPatientAccount" class="form-label"
-                    >帳號</label>
+                      >帳號</label
+                    >
                     <input
                       type="text"
                       class="form-control"
@@ -567,9 +600,7 @@
                       v-model="signUpPatientPassword"
                       required
                     />
-                    <div class="invalid-feedback">
-                      請輸入密碼。
-                    </div>
+                    <div class="invalid-feedback">請輸入密碼。</div>
                   </div>
                   <div>
                     <div class="form-check">
@@ -621,16 +652,18 @@
                   class="btn-close"
                   data-bs-dismiss="modal"
                   aria-label="關閉"
-                >
-                </button>
+                ></button>
               </div>
               <div
                 class="modal-body"
-                style="max-height: 70vh; overflow-y: auto;"
+                style="max-height: 70vh; overflow-y: auto"
               >
                 <!-- First Section: Unmonitored Patients -->
                 <h6 class="mb-1">未監測病患</h6>
-                <div class="list-group mb-2" style="max-height: 25vh; overflow-y: auto;">
+                <div
+                  class="list-group mb-2"
+                  style="max-height: 25vh; overflow-y: auto"
+                >
                   <div
                     class="list-group-item d-flex justify-content-between align-items-center"
                     v-for="patient in unmonitoredPatients"
@@ -648,7 +681,10 @@
 
                 <!-- Second Section: Monitored Patients -->
                 <h6 class="mb-1">監測中病患</h6>
-                <div class="list-group mb-2" style="max-height: 25vh; overflow-y: auto;">
+                <div
+                  class="list-group mb-2"
+                  style="max-height: 25vh; overflow-y: auto"
+                >
                   <div
                     class="list-group-item d-flex justify-content-between align-items-center"
                     v-for="patient in monitoredPatientAccounts"
@@ -706,17 +742,17 @@
                   class="btn-close"
                   data-bs-dismiss="modal"
                   aria-label="關閉"
-                >
-                </button>
+                ></button>
               </div>
               <div class="modal-body">
                 <div
                   class="d-flex justify-content-center"
                   id="qrCodeContainer"
                   style="display: block"
+                ></div>
+                <div
+                  class="text-center mt-3 d-flex justify-content-center gap-2"
                 >
-                </div>
-                <div class="text-center mt-3 d-flex justify-content-center gap-2">
                   <button
                     type="button"
                     class="btn"
@@ -724,11 +760,7 @@
                   >
                     <i class="fas fa-copy"></i>
                   </button>
-                  <button
-                    type="button"
-                    class="btn"
-                    @click="printQrCode"
-                  >
+                  <button type="button" class="btn" @click="printQrCode">
                     <i class="fas fa-print"></i>
                   </button>
                 </div>
@@ -749,10 +781,17 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="transferModalLabel">轉移資料</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                ></button>
               </div>
               <div class="modal-body">
-                <p>請輸入要將 <strong>{{ transferFrom }}</strong> 的資料轉移到哪個帳號：</p>
+                <p>
+                  請輸入要將
+                  <strong>{{ transferFrom }}</strong> 的資料轉移到哪個帳號：
+                </p>
                 <input
                   v-model="transferTo"
                   type="text"
@@ -761,8 +800,12 @@
                 />
               </div>
               <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button class="btn btn-primary" @click="transferPatientData">確認轉移</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                  取消
+                </button>
+                <button class="btn btn-primary" @click="transferPatientData">
+                  確認轉移
+                </button>
               </div>
             </div>
           </div>
@@ -780,14 +823,30 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="confirmModalLabel">請確認操作</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                ></button>
               </div>
-              <div class="modal-body">
-                {{ confirmMessage }}
-              </div>
+              <div class="modal-body">{{ confirmMessage }}</div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="handleConfirm(false)">取消</button>
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" @click="handleConfirm(true)">確認</button>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                  @click="handleConfirm(false)"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  data-bs-dismiss="modal"
+                  @click="handleConfirm(true)"
+                >
+                  確認
+                </button>
               </div>
             </div>
           </div>
