@@ -644,7 +644,6 @@ Vue.createApp({
         account: this.account,
         password: this.password,
         patient,
-        patient_password: patient_password,
       };
 
       const { message } = await this.postRequest(payload);
