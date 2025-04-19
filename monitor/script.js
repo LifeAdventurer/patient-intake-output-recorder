@@ -234,6 +234,12 @@ Vue.createApp({
     },
 
     // --- API Communication ---
+    /**
+     * Sends a POST request to the API endpoint.
+     * @param {object} payload - The data to send in the request body.
+     * @returns {Promise<object>} - The JSON response from the API.
+     * @throws {Error} - If the network request fails or the API returns an error status.
+     */
     async postRequest(payload) {
       if (!this.apiUrl) {
         throw new Error("API URL is not configured.");
@@ -286,12 +292,13 @@ Vue.createApp({
 
       try {
         const payload = {
-          event: this.events.FETCH_MONITORING_PATIENTS,
+          event: this.events.FETCH_MONITORING_PATIENTS, // Use fetch as auth check
           account: this.account,
           password: this.password,
         };
         const fetchedData = await this.postRequest(payload);
 
+        // Check for specific non-success messages first
         if (
           fetchedData.message &&
           fetchedData.message !==
@@ -778,6 +785,11 @@ Vue.createApp({
     }, 200), // 200ms debounce delay
 
     // --- Record Editing & Management ---
+    /**
+     * Toggles the edit mode for a specific record row.
+     * @param {HTMLElement} target - The element triggering the edit (used to get ID).
+     * @param {string} patientAccount - The account of the patient whose record is being edited.
+     */
     async toggleRecordEdit(target, patientAccount) {
       if (!target || !target.attributes || !target.attributes.id) return;
       const idParts = target.attributes.id.textContent.split("-");
@@ -930,6 +942,11 @@ Vue.createApp({
       }
     },
 
+    /**
+     * Removes a specific record entry after confirmation.
+     * @param {HTMLElement} target - The element triggering the removal (used to get ID).
+     * @param {string} patientAccount - The account of the patient.
+     */
     async removeRecord(target, patientAccount) {
       if (this.removingRecord || this.confirming) return; // Prevent concurrent removals
 
@@ -1520,6 +1537,12 @@ Vue.createApp({
     },
 
     // --- UI Helpers ---
+    /**
+     * Displays a Bootstrap alert message.
+     * @param {string} message - The message to display.
+     * @param {'success' | 'danger' | 'warning' | 'info'} type - The alert type (default: 'success').
+     * @param {number} duration - How long the alert stays visible in ms (default: 3000).
+     */
     showAlert(message, type = "success", duration = 3000) {
       this.bootstrapAlertMessage = message;
       // Map simple type to Bootstrap class
@@ -1551,6 +1574,11 @@ Vue.createApp({
       }, duration);
     },
 
+    /**
+     * Shows a confirmation modal and returns a promise that resolves with the user's choice.
+     * @param {string} message - The message to display in the modal body.
+     * @returns {Promise<boolean>} - Resolves true if confirmed, false otherwise.
+     */
     showConfirm(message) {
       this.confirmMessage = message;
       this.confirming = true; // Set flag while modal is potentially visible
