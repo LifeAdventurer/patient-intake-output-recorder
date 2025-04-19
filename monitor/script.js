@@ -1146,7 +1146,13 @@ Vue.createApp({
             </html>
         `);
         printWindow.document.close();
-      } catch (error) {}
+      } catch (error) {
+        console.error("Failed to prepare QR Code for printing:", error);
+        this.showAlert(
+          `準備列印 QR Code 時發生錯誤: ${error.message}`,
+          "danger",
+        );
+      }
     },
 
     // --- UI Helpers ---
