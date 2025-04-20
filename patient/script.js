@@ -57,14 +57,7 @@ Vue.createApp({
     };
   },
 
-  async created() {
-    await this.fetchApiUrl();
-    await this.loadAPIEvents();
-    await this.loadSupportedLanguages();
-    await this.loadLangTexts();
-    this.loadSelectedLanguage();
-  },
-
+  // --- Computed Properties ---
   computed: {
     curLangText() {
       return this.curLangTexts[this.selectedLanguage];
@@ -87,6 +80,58 @@ Vue.createApp({
       return reversedData;
     },
   },
+
+  // --- Lifecycle Hooks ---
+  async created() {
+    await this.fetchApiUrl();
+    await this.loadAPIEvents();
+    await this.loadSupportedLanguages();
+    await this.loadLangTexts();
+    this.loadSelectedLanguage();
+  },
+
+  async mounted() {
+    this.updateDateTime();
+    setInterval(this.updateDateTime, 1000);
+
+    const url = new URL(location.href);
+    const params = url.searchParams;
+    const account = params.has("acct")
+      ? params.get("acct")
+      : sessionStorage.getItem("account");
+    const password = params.has("pw")
+      ? params.get("pw")
+      : sessionStorage.getItem("password");
+
+    if (account && password) {
+      this.authenticated = false;
+      this.account = account;
+      this.password = password;
+      await this.authenticate();
+    }
+
+    setInterval(async () => {
+      if (this.authenticated && !this.confirming) {
+        const fetchedData = await this.fetchRecords();
+        if (
+          !this.confirming &&
+          Object.hasOwn(fetchedData, "message") &&
+          fetchedData.message === this.events.messages.FETCH_RECORD_SUCCESS
+        ) {
+          this.records = fetchedData["account_records"];
+          this.processRestrictionText();
+        }
+      }
+    }, 3000);
+
+    globalThis.addEventListener("scroll", this.handleScroll);
+  },
+
+  beforeUnmount() {
+    globalThis.removeEventListener("scroll", this.handleScroll);
+  },
+
+  // --- Methods ---
   methods: {
     async fetchApiUrl() {
       try {
@@ -500,44 +545,5 @@ Vue.createApp({
         "0" + d.getDate()
       ).slice(-2)}`;
     },
-  },
-  async mounted() {
-    this.updateDateTime();
-    setInterval(this.updateDateTime, 1000);
-
-    const url = new URL(location.href);
-    const params = url.searchParams;
-    const account = params.has("acct")
-      ? params.get("acct")
-      : sessionStorage.getItem("account");
-    const password = params.has("pw")
-      ? params.get("pw")
-      : sessionStorage.getItem("password");
-
-    if (account && password) {
-      this.authenticated = false;
-      this.account = account;
-      this.password = password;
-      await this.authenticate();
-    }
-
-    setInterval(async () => {
-      if (this.authenticated && !this.confirming) {
-        const fetchedData = await this.fetchRecords();
-        if (
-          !this.confirming &&
-          Object.hasOwn(fetchedData, "message") &&
-          fetchedData.message === this.events.messages.FETCH_RECORD_SUCCESS
-        ) {
-          this.records = fetchedData["account_records"];
-          this.processRestrictionText();
-        }
-      }
-    }, 3000);
-
-    globalThis.addEventListener("scroll", this.handleScroll);
-  },
-  beforeUnmount() {
-    globalThis.removeEventListener("scroll", this.handleScroll);
   },
 }).mount("#app");
