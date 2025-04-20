@@ -59,22 +59,42 @@ Vue.createApp({
 
   // --- Computed Properties ---
   computed: {
+    /** Returns the translation object for the currently selected language */
     curLangText() {
-      return this.curLangTexts[this.selectedLanguage];
+      return (
+        this.curLangTexts[this.selectedLanguage] ||
+        this.curLangTexts["en"] ||
+        {}
+      ); // Fallback to English or empty object
     },
+
+    /** Returns record data with date keys reversed for display */
     reversedRecord() {
       const reversedData = {};
+      // These keys are part of the patient record but shouldn't be displayed as daily records
       const keysToFilter = [
         "isEditing",
         "limitAmount",
         "foodCheckboxChecked",
         "waterCheckboxChecked",
       ];
+
       Object.keys(this.records)
-        .reverse()
+        .filter(
+          (key) =>
+            !keysToFilter.includes(key) && /^\d{4}_\d{1,2}_\d{1,2}$/.test(key),
+        ) // Filter control keys and validate format
+        .sort((a, b) => b.localeCompare(a)) // Sort keys descending (latest date first)
         .forEach((key) => {
-          if (!keysToFilter.includes(key)) {
+          // Ensure the daily record structure exists before assigning
+          if (
+            this.records[key] &&
+            typeof this.records[key] === "object" &&
+            this.records[key].data
+          ) {
             reversedData[key] = this.records[key];
+          } else {
+            console.warn(`Skipping invalid record structure for key: ${key}`);
           }
         });
       return reversedData;
