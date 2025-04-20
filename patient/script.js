@@ -1,14 +1,43 @@
 Vue.createApp({
   data() {
     return {
-      account: "",
-      password: "",
-      showPassword: false,
+      // --- Core State ---
+      account: "", // Loaded from sessionStorage or URL params
+      password: "", // Loaded from sessionStorage or URL params
       authenticated: false,
-      currentDate: "",
-      currentTime: "",
-      currentDateYY_MM_DD: "",
-      restrictionText: "",
+      apiUrl: "", // Loaded from config.json
+      events: {}, // Loaded from events.json
+      records: {}, // Holds patient's fetched record data { date_key: { data: [...], ...}, controlKeys... }
+
+      // --- Input State ---
+      inputFood: 0,
+      inputWater: 0,
+      inputUrination: 0,
+      inputDefecation: 0,
+      customInputFood: "", // For custom value entry
+      customInputWater: "", // For custom value entry
+      customInputUrination: "", // For custom value entry
+      inputWeight: 0,
+
+      // --- UI State ---
+      showPassword: false,
+      restrictionText: "", // Display text for intake limits
+      showNotification: false, // For "Record Saved" feedback
+      showScrollButton: false,
+      bootstrapAlertMessage: "",
+      bootstrapAlertClass: "alert-danger", // Default class
+      confirmMessage: "",
+      confirmResolver: null, // For Bootstrap confirm modal promise
+      confirming: false, // Flag to prevent sync/actions during confirmation modal
+      removingRecord: false, // Flag during record removal confirmation/API call
+
+      // --- i18n State ---
+      selectedLanguage: "zh-TW", // Default language
+      supportedLanguages: [], // Loaded from supported_languages.json
+      curLangTexts: {}, // Loaded from lang_texts.json
+
+      // --- Configuration / Constants
+      // Predefined options for quick input (consider moving to config if dynamic)
       options: [
         { value: 50, label: "50" },
         { value: 100, label: "100" },
@@ -19,34 +48,15 @@ Vue.createApp({
         { value: 350, label: "350" },
         { value: 400, label: "400" },
       ],
-      inputFood: 0,
-      inputWater: 0,
-      inputUrination: 0,
-      inputDefecation: 0,
-      customInputFood: "",
-      customInputWater: "",
-      customInputUrination: "",
-      inputWeight: 0,
-      showNotification: false,
-      records: {},
-      selectedLanguage: "zh-TW",
-      supportedLanguages: [],
-      curLangTexts: {},
-      showScrollButton: false,
-      removingRecord: false,
-      // Bootstrap alert
-      bootstrapAlertMessage: "",
-      bootstrapAlertClass: "alert-danger",
-      // Bootstrap Confirm Modal
-      confirmMessage: "",
-      confirmResolver: null,
-      // Internal Usage
-      dietaryItems: ["food", "water", "urination", "defecation"],
-      confirming: false,
-      apiUrl: "",
-      events: {},
+      dietaryItems: ["food", "water", "urination", "defecation"], // For iteration
+
+      // --- Date/Time ---
+      currentDate: "", // Formatted date string for display
+      currentTime: "", // Formatted time string for display
+      currentDateYY_MM_DD: "", // YYYY_M_D format for record keys
     };
   },
+
   async created() {
     await this.fetchApiUrl();
     await this.loadAPIEvents();
@@ -54,6 +64,7 @@ Vue.createApp({
     await this.loadLangTexts();
     this.loadSelectedLanguage();
   },
+
   computed: {
     curLangText() {
       return this.curLangTexts[this.selectedLanguage];
