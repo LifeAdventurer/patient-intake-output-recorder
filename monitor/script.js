@@ -775,7 +775,7 @@ Vue.createApp({
     filterPatients: debounce(function () {
       const query = this.searchQuery.trim().toLowerCase();
       if (query === "") {
-        this.filteredPatientAccounts = this.monitoredPatientAccounts;
+        this.filteredPatientAccounts = [...this.monitoredPatientAccounts];
       } else {
         this.filteredPatientAccounts = this.monitoredPatientAccounts.filter(
           (account) => account.toLowerCase().includes(query),
@@ -981,7 +981,7 @@ Vue.createApp({
       const confirmMessage = [
         "請確認是否移除這筆資料:",
         `床號: ${patientAccount}`,
-        `日期: ${dateKey.replaceAll(/_/g, "/")}`, // Display format
+        `日期: ${dateKey.replace(/_/g, "/")}`, // Display format
         `時間: ${record.time}`,
         ...this.dietaryItems.map(
           (item) => `${dietaryItemsLabel[item]}: ${record[item] ?? 0}`,
@@ -1078,6 +1078,7 @@ Vue.createApp({
       const isCurrentlyEditingThis = record.isEditing;
 
       if (isCurrentlyEditingThis) {
+        // --- Save/Finish Editing Restriction ---
         console.log(`Attempting to save restriction for ${patientAccount}`);
         const limitAmountStr = String(record.limitAmount ?? "").trim();
         const foodChecked = record.foodCheckboxChecked ?? false;
@@ -1094,7 +1095,7 @@ Vue.createApp({
             parseInt(limitAmountStr) < 0
           ) {
             isValid = false;
-            errorMsg = "以勾選限制項目，請輸入有效的限制數值(大於等於0)。";
+            errorMsg = "已勾選限制項目，請輸入有效的限制數值(大於等於 0)。";
           } else {
             // Ensure stored value is numeric if valid
             record.limitAmount = parseInt(limitAmountStr);
@@ -1106,7 +1107,7 @@ Vue.createApp({
 
         if (!isValid) {
           this.showAlert(errorMsg, "danger");
-          return;
+          return; // Prevent saving invalid state
         }
 
         // --- Validation Passed ---
@@ -1206,7 +1207,7 @@ Vue.createApp({
 
       if (targetHasExistingData) {
         this.showAlert(
-          "目標帳號已有資料，無法轉移。請先清除目標帳號的資料",
+          "目標帳號已有資料，無法轉移。請先清除目標帳號的資料。",
           "danger",
         );
         return;
@@ -1526,7 +1527,7 @@ Vue.createApp({
                 </body>
             </html>
         `);
-        printWindow.document.close();
+        printWindow.document.close(); // Important for some browsers
       } catch (error) {
         console.error("Failed to prepare QR Code for printing:", error);
         this.showAlert(
