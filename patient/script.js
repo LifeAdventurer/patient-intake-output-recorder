@@ -101,6 +101,25 @@ Vue.createApp({
     },
   },
 
+  // --- Watchers ---
+  watch: {
+    /** Update restriction text and save language preference when changed */
+    selectedLanguage(newLang, oldLang) {
+      if (newLang !== oldLang) {
+        localStorage.setItem("selectedLanguageCode", newLang);
+        this.processRestrictionText(); // Re-process with new language strings
+        this.updateDateTime(); // Update date format if language changes day names
+      }
+    },
+    /** Re-process restriction text if the underlying record data changes */
+    records: {
+      handler() {
+        this.processRestrictionText();
+      },
+      deep: true, // Watch for nested changes within the records object
+    },
+  },
+
   // --- Lifecycle Hooks ---
   async created() {
     await this.fetchApiUrl();
