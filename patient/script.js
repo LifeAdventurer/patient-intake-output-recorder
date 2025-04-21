@@ -123,8 +123,7 @@ Vue.createApp({
 
   // --- Lifecycle Hooks ---
   async created() {
-    await this.fetchApiUrl();
-    await this.loadAPIEvents();
+    await this.fetchConfig(); // Loads apiUrl, API events and messages
     await this.loadSupportedLanguages();
     await this.loadLangTexts();
     this.loadSelectedLanguage();
@@ -167,22 +166,26 @@ Vue.createApp({
 
   // --- Methods ---
   methods: {
-    async fetchApiUrl() {
+    // --- Initialization & Configuration ---
+    async fetchConfig() {
       try {
         const response = await fetch("./config.json");
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
         const config = await response.json();
         this.apiUrl = config.apiUrl;
-      } catch (error) {
-        console.error("Failed to load API URL", error);
-      }
-    },
 
-    async loadAPIEvents() {
-      try {
-        const response = await fetch("./events.json");
-        this.events = await response.json();
+        const eventsResponse = await fetch("./events.json");
+        if (!eventsResponse.ok)
+          throw new Error(`HTTP error! status: ${eventsResponse.status}`);
+        this.events = await eventsResponse.json();
+        console.log("Configuration and events loaded.");
       } catch (error) {
-        console.error("Failed to load events", error);
+        console.error("Failed to load config.json or events.json:", error);
+        // this.showAlert(
+        //   this.curLangText?.config_load_error || "無法載入設定",
+        //   "danger",
+        // );
       }
     },
 
@@ -205,17 +208,20 @@ Vue.createApp({
     },
 
     loadSelectedLanguage() {
-      const languageCode = localStorage.getItem("selectedLanguageCode");
+      const savedLang = localStorage.getItem("selectedLanguageCode");
+      // Check if saved language is valid and loaded
       if (
-        languageCode &&
-        this.supportedLanguages.some(
-          (language) => language.code === languageCode,
-        )
+        savedLang &&
+        this.supportedLanguages.some((lang) => lang.code === savedLang) &&
+        this.curLangTexts[savedLang]
       ) {
-        this.selectedLanguage = languageCode;
+        this.selectedLanguage = savedLang;
       } else {
+        // If invalid or not loaded, set default and save it
+        this.selectedLanguage = "zh-TW"; // Ensure default exists in files
         localStorage.setItem("selectedLanguageCode", this.selectedLanguage);
       }
+      console.log("Selected language set to:", this.selectedLanguage);
     },
 
     initRecords(currentDate) {
