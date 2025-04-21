@@ -347,9 +347,7 @@ Vue.createApp({
             break;
           case this.events.messages.ACCT_NOT_EXIST:
             this.showAlert(this.curLangText.nonexistent_account, "danger");
-            this.account = "";
-            this.password = "";
-            this.stopBackgroundSync(); // Stop sync if logged out due to error
+            this.resetCredentialsAndState();
             break;
           case this.events.messages.AUTH_FAIL_PASSWORD:
             this.showAlert(this.curLangText.incorrect_password, "danger");
@@ -362,26 +360,28 @@ Vue.createApp({
               this.curLangText.account_without_permission,
               "danger",
             );
-            this.account = "";
-            this.password = "";
-            this.stopBackgroundSync(); // Handles interval clearing and listener removal
+            this.resetCredentialsAndState();
             break;
           default:
             // Handle other specific errors or generic failure
-            this.account = "";
-            this.password = "";
-            this.authenticated = false;
-            this.stopBackgroundSync();
+            this.resetCredentialsAndState();
             break;
         }
       } else if (!fetchedData) {
         // Handle case where fetchRecords failed completely (e.g., network error)
         // Alert should have been shown by postRequest/fetchRecords
-        this.account = "";
-        this.password = "";
-        this.authenticated = false;
-        this.stopBackgroundSync();
+        this.resetCredentialsAndState();
       }
+    },
+
+    resetCredentialsAndState() {
+      this.account = "";
+      this.password = "";
+      this.authenticated = false;
+      this.records = {};
+      sessionStorage.removeItem("account");
+      sessionStorage.removeItem("password");
+      this.stopBackgroundSync(); // Stop sync if logged out due to error
     },
 
     togglePasswordVisibility() {
@@ -391,11 +391,8 @@ Vue.createApp({
     async confirmLogout() {
       const confirmed = await this.showConfirm(this.curLangText.confirm_logout);
       if (confirmed) {
-        this.account = "";
-        this.password = "";
-        this.authenticated = false;
-        sessionStorage.removeItem("account");
-        sessionStorage.removeItem("password");
+        console.log("Logging out patient:", this.account);
+        this.resetCredentialsAndState();
       }
     },
 
