@@ -673,7 +673,7 @@ Vue.createApp({
     },
 
     changeLanguage(languageCode) {
-      if (this.suppportedLanguages.some((lang) => lang.code === languageCode)) {
+      if (this.supportedLanguages.some((lang) => lang.code === languageCode)) {
         this.selectedLanguage = languageCode;
         // Watcher will handle localStorage update and text processing
       } else {
