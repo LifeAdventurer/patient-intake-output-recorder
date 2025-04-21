@@ -49,6 +49,7 @@ Vue.createApp({
         { value: 400, label: "400" },
       ],
       dietaryItems: ["food", "water", "urination", "defecation"], // For iteration
+      backgroundSyncIntervalId: null,
       dateTimeIntervalId: null,
 
       // --- Date/Time ---
@@ -123,10 +124,11 @@ Vue.createApp({
 
   // --- Lifecycle Hooks ---
   async created() {
+    // Load essential configs first
     await this.fetchConfig(); // Loads apiUrl, API events and messages
     await this.loadLanguageData(); // Loads supported languages and texts
-    this.loadSelectedLanguage();
-    this.updateDateTime();
+    this.loadSelectedLanguage(); // Sets initial language based on localStorage or default
+    this.updateDateTime(); // Initial date/time set
 
     // Attempt initial authentication (moved from mounted to ensure config is ready)
     const urlParams = new URLSearchParams(window.location.search);
