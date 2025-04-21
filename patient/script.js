@@ -731,26 +731,45 @@ Vue.createApp({
     },
 
     showConfirm(message) {
-      this.confirmMessage = message;
+      const msg = this.curLangText?.[message] || message; // Translate message if key exists
+      this.confirmMessage = msg;
+      this.confirming = true; // Set flag
 
       return new Promise((resolve) => {
         this.confirmResolver = resolve;
-
-        const confirmModal = document.getElementById("confirmModal");
-        const modal = new bootstrap.Modal(confirmModal);
-        modal.show();
+        const modalElement = document.getElementById("confirmModal");
+        if (modalElement) {
+          const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+          const handleModalClose = () => {
+            if (this.confirmResolver) {
+              this.confirmResolver(false); // Resolve false if closed without button
+              this.confirmResolver = null;
+            }
+            this.confirming = false; // Reset flag
+            modalElement.removeEventListener(
+              "hidden.bs.modal",
+              handleModalClose,
+            );
+          };
+          modalElement.addEventListener("hidden.bs.modal", handleModalClose, {
+            once: true,
+          });
+          modal.show();
+        } else {
+          console.error("Confirm modal element not found.");
+          resolve(false); // Fail safely
+          this.confirming = false;
+        }
       });
     },
 
     handleConfirm(result) {
-      const confirmModal = document.getElementById("confirmModal");
-      const modal = bootstrap.Modal.getInstance(confirmModal);
-      modal.hide();
-
+      // Resolve the promise stored in showConfirm
       if (this.confirmResolver) {
         this.confirmResolver(result);
         this.confirmResolver = null;
       }
+      // Flag is reset by hidden.bs.modal listener in showConfirm
     },
 
     changeLanguage(languageCode) {
