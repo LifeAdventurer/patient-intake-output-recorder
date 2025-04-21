@@ -592,25 +592,53 @@ Vue.createApp({
       }
     },
 
+    /** Processes and updates the restriction text display */
     processRestrictionText() {
+      // Ensure records and language text are loaded
       if (
-        !isNaN(this.records["limitAmount"]) &&
-        String(this.records["limitAmount"]).trim() !== ""
+        !this.records ||
+        typeof this.records !== "object" ||
+        !this.curLangText ||
+        Object.keys(this.curLangText).length === 0
       ) {
-        const text = [];
-        if (
-          this.records["foodCheckboxChecked"] &&
-          this.records["waterCheckboxChecked"]
-        ) {
-          text.push(this.curLangText.limit_food_and_water_to_no_more_than);
-        } else if (this.records["foodCheckboxChecked"]) {
-          text.push(this.curLangText.limit_food_to_no_more_than);
-        } else if (this.records["waterCheckboxChecked"]) {
-          text.push(this.curLangText.limit_water_to_no_more_than);
-        }
-        text.push(this.records["limitAmount"], this.curLangText.grams);
-        this.restrictionText = text.join("");
+        this.restrictionText = ""; // Consider a loading/default message
+        return;
       }
+
+      const limitAmountStr = String(this.records.limitAmount ?? "").trim();
+      const foodChecked = this.records.foodCheckboxChecked ?? false;
+      const waterChecked = this.records.waterCheckboxChecked ?? false;
+      let text = "";
+      if (
+        limitAmountStr !== "" &&
+        !isNaN(parseInt(limitAmountStr)) &&
+        parseInt(limitAmountStr) >= 0 &&
+        (foodChecked || waterChecked)
+      ) {
+        const limitAmount = parseFloat(limitAmountStr);
+        const parts = [];
+        if (foodChecked && waterChecked) {
+          parts.push(
+            this.curLangText.limit_food_and_water_to_no_more_than ||
+              "Limit Food+Water <",
+          );
+        } else if (foodChecked) {
+          parts.push(
+            this.curLangText.limit_food_to_no_more_than || "Limit Food <",
+          );
+        } else {
+          // Only water checked
+          parts.push(
+            this.curLangText.limit_water_to_no_more_than || "Limit Water <",
+          );
+        }
+        parts.push(limitAmount);
+        parts.push(this.curLangText.grams || "g/ml"); // Use a generic unit
+        text = parts.join(" "); // Add spaces between parts
+      } else {
+        // Leave text as empty string, so the alert will not display
+      }
+      this.restrictionText = text;
     },
 
     /** Determines color for food sum based on restrictions */
