@@ -29,6 +29,7 @@ Vue.createApp({
       confirmMessage: "",
       confirmResolver: null, // For Bootstrap confirm modal promise
       isLoading: false, // Generic loading state for API calls
+      isFetching: false, // Specific flag for fetchRecords call
       confirming: false, // Flag to prevent sync/actions during confirmation modal
       removingRecord: false, // Flag during record removal confirmation/API call
 
@@ -333,31 +334,43 @@ Vue.createApp({
       }
     },
 
+    /** Fetches the records for the currently authenticated patient */
     async fetchRecords() {
+      if (this.isFetching || this.confirming) {
+        // console.log("Fetch skipped due to active operation.");
+        return; // Don't fetch if  already fetching, or confirming
+      }
+      console.log("Fetching records...");
+      this.isFetching = true;
       try {
-        const response = await fetch(this.apiUrl, {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            event: this.events.FETCH_RECORD,
-            account: this.account,
-            password: this.password,
-            patient: this.account,
-          }),
-        });
+        const payload = {
+          event: this.events.FETCH_RECORD,
+          account: this.account,
+          password: this.password,
+          patient: this.account, // Patient side fetches its own account
+        };
+        const fetchedData = await this.postRequest(payload);
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch records.");
+        // Process successful fetch
+        if (fetchedData.message === this.events.messages.FETCH_RECORD_SUCCESS) {
+          this.records = fetchedData.account_records || {};
+          // processRestrictionText is handled by the watcher now
+          console.log("Records fetched successfully.");
+        } else {
+          // Handle specific non-success messages if needed
+          console.warn(
+            "Fetch records returned non-success message:",
+            fetchedData.message,
+          );
+          // Consider showing a warning, but could be noisy for background sync
         }
-
-        console.log("Successfully fetched the records.");
-        return await response.json();
+        return fetchedData; // Return data for authenticate function
       } catch (error) {
-        throw new Error(error.message);
+        console.error("Error fetching records:", error.message);
+        // Alert is shown by postRequest
+        return { message: error.message }; // Return error structure for authenticate
+      } finally {
+        this.isFetching = false;
       }
     },
 
@@ -417,7 +430,7 @@ Vue.createApp({
       if (fetchedData && fetchedData.message) {
         switch (fetchedData.message) {
           case this.events.messages.FETCH_RECORD_SUCCESS:
-            this.records = fetchedData["account_records"];
+            // Success case handled within fetchRecords by setting this.records
             this.authenticated = true;
             // Store credentials in sessionStorage
             sessionStorage.setItem("account", this.account);
