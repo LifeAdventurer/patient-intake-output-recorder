@@ -183,6 +183,7 @@ Vue.createApp({
         console.error("Failed to load API URL", error);
       }
     },
+
     async loadAPIEvents() {
       try {
         const response = await fetch("./events.json");
@@ -191,6 +192,7 @@ Vue.createApp({
         console.error("Failed to load events", error);
       }
     },
+
     async loadSupportedLanguages() {
       try {
         const response = await fetch("./supported_languages.json");
@@ -199,6 +201,7 @@ Vue.createApp({
         console.error("Failed to load supported languages", error);
       }
     },
+
     async loadLangTexts() {
       try {
         const response = await fetch("./lang_texts.json");
@@ -207,6 +210,7 @@ Vue.createApp({
         console.error("Failed to load language texts", error);
       }
     },
+
     loadSelectedLanguage() {
       const languageCode = localStorage.getItem("selectedLanguageCode");
       if (
@@ -220,6 +224,7 @@ Vue.createApp({
         localStorage.setItem("selectedLanguageCode", this.selectedLanguage);
       }
     },
+
     initRecords(currentDate) {
       const num = currentDate.split("_");
       this.records[currentDate] = {
@@ -233,6 +238,21 @@ Vue.createApp({
         weight: "NaN",
       };
     },
+
+    updateDateTime() {
+      const d = new Date();
+      const dayOfWeek = this.curLangText.day_of_week;
+      this.currentDate = `${d.getFullYear()}.${d.getMonth() + 1}.${(
+        "0" + d.getDate()
+      ).slice(-2)} (${dayOfWeek[d.getDay()]})`;
+      this.currentTime = `${("0" + d.getHours()).slice(-2)}:${(
+        "0" + d.getMinutes()
+      ).slice(-2)}:${("0" + d.getSeconds()).slice(-2)}`;
+      this.currentDateYY_MM_DD = `${d.getFullYear()}_${d.getMonth() + 1}_${(
+        "0" + d.getDate()
+      ).slice(-2)}`;
+    },
+
     async fetchRecords() {
       try {
         const response = await fetch(this.apiUrl, {
@@ -260,126 +280,7 @@ Vue.createApp({
         throw new Error(error.message);
       }
     },
-    togglePasswordVisibility() {
-      this.showPassword = !this.showPassword;
-    },
-    showAlert(message, type = "success") {
-      this.bootstrapAlertMessage = message;
-      this.bootstrapAlertClass =
-        type === "success" ? "alert-success" : "alert-danger";
 
-      setTimeout(() => {
-        this.bootstrapAlertMessage = "";
-      }, 5000);
-    },
-    showConfirm(message) {
-      this.confirmMessage = message;
-
-      return new Promise((resolve) => {
-        this.confirmResolver = resolve;
-
-        const confirmModal = document.getElementById("confirmModal");
-        const modal = new bootstrap.Modal(confirmModal);
-        modal.show();
-      });
-    },
-    handleConfirm(result) {
-      const confirmModal = document.getElementById("confirmModal");
-      const modal = bootstrap.Modal.getInstance(confirmModal);
-      modal.hide();
-
-      if (this.confirmResolver) {
-        this.confirmResolver(result);
-        this.confirmResolver = null;
-      }
-    },
-    processRestrictionText() {
-      if (
-        !isNaN(this.records["limitAmount"]) &&
-        String(this.records["limitAmount"]).trim() !== ""
-      ) {
-        const text = [];
-        if (
-          this.records["foodCheckboxChecked"] &&
-          this.records["waterCheckboxChecked"]
-        ) {
-          text.push(this.curLangText.limit_food_and_water_to_no_more_than);
-        } else if (this.records["foodCheckboxChecked"]) {
-          text.push(this.curLangText.limit_food_to_no_more_than);
-        } else if (this.records["waterCheckboxChecked"]) {
-          text.push(this.curLangText.limit_water_to_no_more_than);
-        }
-        text.push(this.records["limitAmount"], this.curLangText.grams);
-        this.restrictionText = text.join("");
-      }
-    },
-    async authenticate() {
-      const fetchedData = await this.fetchRecords();
-      if (Object.hasOwn(fetchedData, "message")) {
-        switch (fetchedData.message) {
-          case this.events.messages.ACCT_NOT_EXIST:
-            this.showAlert(
-              this.curLangText.nonexistent_account,
-              "alert-danger",
-            );
-            this.account = "";
-            this.password = "";
-            break;
-          case this.events.messages.AUTH_FAIL_PASSWORD:
-            this.showAlert(this.curLangText.incorrect_password, "alert-danger");
-            this.password = "";
-            break;
-          case this.events.messages.INVALID_ACCT_TYPE:
-            this.showAlert(
-              this.curLangText.account_without_permission,
-              "alert-danger",
-            );
-            this.account = "";
-            this.password = "";
-            break;
-          default:
-            this.authenticated = true;
-            this.records = fetchedData["account_records"];
-            this.processRestrictionText();
-            sessionStorage.setItem("account", this.account);
-            sessionStorage.setItem("password", this.password);
-        }
-      }
-    },
-    getFoodSumColor() {
-      let exceed = false;
-      if (this.records["foodCheckboxChecked"]) {
-        exceed =
-          this.records[this.currentDateYY_MM_DD]["foodSum"] +
-            (this.records["waterCheckboxChecked"]
-              ? this.records[this.currentDateYY_MM_DD]["waterSum"]
-              : 0) >
-          this.records["limitAmount"];
-      }
-      return exceed ? "red" : "inherit";
-    },
-    getWaterSumColor() {
-      let exceed = false;
-      if (this.records["waterCheckboxChecked"]) {
-        exceed =
-          this.records[this.currentDateYY_MM_DD]["waterSum"] +
-            (this.records["foodCheckboxChecked"]
-              ? this.records[this.currentDateYY_MM_DD]["foodSum"]
-              : 0) >
-          this.records["limitAmount"];
-      }
-      return exceed ? "red" : "inherit";
-    },
-    async confirmLogout() {
-      const confirmed = await this.showConfirm(this.curLangText.confirm_logout);
-      if (confirmed) {
-        this.account = "";
-        this.password = "";
-        this.authenticated = false;
-        sessionStorage.removeItem("account");
-        sessionStorage.removeItem("password");
-      }
-    },
     async updateRecords() {
       try {
         const response = await fetch(this.apiUrl, {
@@ -418,30 +319,56 @@ Vue.createApp({
         return false;
       }
     },
-    hideNotification() {
-      this.showNotification = false;
+
+    async authenticate() {
+      const fetchedData = await this.fetchRecords();
+      if (Object.hasOwn(fetchedData, "message")) {
+        switch (fetchedData.message) {
+          case this.events.messages.ACCT_NOT_EXIST:
+            this.showAlert(
+              this.curLangText.nonexistent_account,
+              "alert-danger",
+            );
+            this.account = "";
+            this.password = "";
+            break;
+          case this.events.messages.AUTH_FAIL_PASSWORD:
+            this.showAlert(this.curLangText.incorrect_password, "alert-danger");
+            this.password = "";
+            break;
+          case this.events.messages.INVALID_ACCT_TYPE:
+            this.showAlert(
+              this.curLangText.account_without_permission,
+              "alert-danger",
+            );
+            this.account = "";
+            this.password = "";
+            break;
+          default:
+            this.authenticated = true;
+            this.records = fetchedData["account_records"];
+            this.processRestrictionText();
+            sessionStorage.setItem("account", this.account);
+            sessionStorage.setItem("password", this.password);
+        }
+      }
     },
-    handleCustomInput() {
-      if (this.inputFood === "custom") {
-        const intValue = parseInt(this.customInputFood);
-        if (isNaN(intValue) || intValue < 0) return false;
-        this.inputFood = intValue;
-        this.customInputFood = "";
-      }
-      if (this.inputWater === "custom") {
-        const intValue = parseInt(this.customInputWater);
-        if (isNaN(intValue) || intValue < 0) return false;
-        this.inputWater = intValue;
-        this.customInputWater = "";
-      }
-      if (this.inputUrination === "custom") {
-        const intValue = parseInt(this.customInputUrination);
-        if (isNaN(intValue) || intValue < 0) return false;
-        this.inputUrination = intValue;
-        this.customInputUrination = "";
-      }
-      return true;
+
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
     },
+
+    async confirmLogout() {
+      const confirmed = await this.showConfirm(this.curLangText.confirm_logout);
+      if (confirmed) {
+        this.account = "";
+        this.password = "";
+        this.authenticated = false;
+        sessionStorage.removeItem("account");
+        sessionStorage.removeItem("password");
+      }
+    },
+
     async addData() {
       const d = new Date();
       const currentDate = `${d.getFullYear()}_${d.getMonth() + 1}_${(
@@ -538,11 +465,54 @@ Vue.createApp({
         }
       }
     },
-    changeLanguage(languageCode) {
-      this.selectedLanguage = languageCode;
-      localStorage.setItem("selectedLanguageCode", languageCode);
-      this.processRestrictionText();
+
+    processRestrictionText() {
+      if (
+        !isNaN(this.records["limitAmount"]) &&
+        String(this.records["limitAmount"]).trim() !== ""
+      ) {
+        const text = [];
+        if (
+          this.records["foodCheckboxChecked"] &&
+          this.records["waterCheckboxChecked"]
+        ) {
+          text.push(this.curLangText.limit_food_and_water_to_no_more_than);
+        } else if (this.records["foodCheckboxChecked"]) {
+          text.push(this.curLangText.limit_food_to_no_more_than);
+        } else if (this.records["waterCheckboxChecked"]) {
+          text.push(this.curLangText.limit_water_to_no_more_than);
+        }
+        text.push(this.records["limitAmount"], this.curLangText.grams);
+        this.restrictionText = text.join("");
+      }
     },
+
+    getFoodSumColor() {
+      let exceed = false;
+      if (this.records["foodCheckboxChecked"]) {
+        exceed =
+          this.records[this.currentDateYY_MM_DD]["foodSum"] +
+            (this.records["waterCheckboxChecked"]
+              ? this.records[this.currentDateYY_MM_DD]["waterSum"]
+              : 0) >
+          this.records["limitAmount"];
+      }
+      return exceed ? "red" : "inherit";
+    },
+
+    getWaterSumColor() {
+      let exceed = false;
+      if (this.records["waterCheckboxChecked"]) {
+        exceed =
+          this.records[this.currentDateYY_MM_DD]["waterSum"] +
+            (this.records["foodCheckboxChecked"]
+              ? this.records[this.currentDateYY_MM_DD]["foodSum"]
+              : 0) >
+          this.records["limitAmount"];
+      }
+      return exceed ? "red" : "inherit";
+    },
+
     async removeRecord(target) {
       this.confirming = true;
       const confirmed = await this.showConfirm(
@@ -564,27 +534,81 @@ Vue.createApp({
       }
       this.confirming = false;
     },
+
+    showAlert(message, type = "success") {
+      this.bootstrapAlertMessage = message;
+      this.bootstrapAlertClass =
+        type === "success" ? "alert-success" : "alert-danger";
+
+      setTimeout(() => {
+        this.bootstrapAlertMessage = "";
+      }, 5000);
+    },
+
+    showConfirm(message) {
+      this.confirmMessage = message;
+
+      return new Promise((resolve) => {
+        this.confirmResolver = resolve;
+
+        const confirmModal = document.getElementById("confirmModal");
+        const modal = new bootstrap.Modal(confirmModal);
+        modal.show();
+      });
+    },
+
+    handleConfirm(result) {
+      const confirmModal = document.getElementById("confirmModal");
+      const modal = bootstrap.Modal.getInstance(confirmModal);
+      modal.hide();
+
+      if (this.confirmResolver) {
+        this.confirmResolver(result);
+        this.confirmResolver = null;
+      }
+    },
+
+    hideNotification() {
+      this.showNotification = false;
+    },
+
+    handleCustomInput() {
+      if (this.inputFood === "custom") {
+        const intValue = parseInt(this.customInputFood);
+        if (isNaN(intValue) || intValue < 0) return false;
+        this.inputFood = intValue;
+        this.customInputFood = "";
+      }
+      if (this.inputWater === "custom") {
+        const intValue = parseInt(this.customInputWater);
+        if (isNaN(intValue) || intValue < 0) return false;
+        this.inputWater = intValue;
+        this.customInputWater = "";
+      }
+      if (this.inputUrination === "custom") {
+        const intValue = parseInt(this.customInputUrination);
+        if (isNaN(intValue) || intValue < 0) return false;
+        this.inputUrination = intValue;
+        this.customInputUrination = "";
+      }
+      return true;
+    },
+
+    changeLanguage(languageCode) {
+      this.selectedLanguage = languageCode;
+      localStorage.setItem("selectedLanguageCode", languageCode);
+      this.processRestrictionText();
+    },
+
     scrollToTop() {
       globalThis.scrollTo({
         top: 0,
         behavior: "smooth",
       });
     },
+
     handleScroll() {
       this.showScrollButton = globalThis.scrollY > 20;
-    },
-    updateDateTime() {
-      const d = new Date();
-      const dayOfWeek = this.curLangText.day_of_week;
-      this.currentDate = `${d.getFullYear()}.${d.getMonth() + 1}.${(
-        "0" + d.getDate()
-      ).slice(-2)} (${dayOfWeek[d.getDay()]})`;
-      this.currentTime = `${("0" + d.getHours()).slice(-2)}:${(
-        "0" + d.getMinutes()
-      ).slice(-2)}:${("0" + d.getSeconds()).slice(-2)}`;
-      this.currentDateYY_MM_DD = `${d.getFullYear()}_${d.getMonth() + 1}_${(
-        "0" + d.getDate()
-      ).slice(-2)}`;
     },
   },
 }).mount("#app");
