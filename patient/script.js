@@ -325,10 +325,26 @@ Vue.createApp({
       }
     },
 
+    // --- Authentication ---
     async authenticate() {
+      if (!this.account || !this.password) {
+        return;
+      }
+      console.log("Attempting patient authentication for:", this.account);
+      // fetchRecords doubles as the auth check here
       const fetchedData = await this.fetchRecords();
-      if (Object.hasOwn(fetchedData, "message")) {
+
+      if (fetchedData && fetchedData.message) {
         switch (fetchedData.message) {
+          case this.events.messages.FETCH_RECORD_SUCCESS:
+            this.records = fetchedData["account_records"];
+            this.authenticated = true;
+            // Store credentials in sessionStorage
+            sessionStorage.setItem("account", this.account);
+            sessionStorage.setItem("password", this.password);
+            console.log("Patient authentication successful.");
+            this.setupBackgroundSync(); // Start background sync after successful login
+            break;
           case this.events.messages.ACCT_NOT_EXIST:
             this.showAlert(this.curLangText.nonexistent_account, "danger");
             this.account = "";
@@ -338,8 +354,10 @@ Vue.createApp({
           case this.events.messages.AUTH_FAIL_PASSWORD:
             this.showAlert(this.curLangText.incorrect_password, "danger");
             this.password = "";
+            sessionStorage.removeItem("password");
+            this.authenticated = false;
             break;
-          case this.events.messages.INVALID_ACCT_TYPE:
+          case this.events.messages.INVALID_ACCT_TYPE: // Should ideally not happen for patient login
             this.showAlert(
               this.curLangText.account_without_permission,
               "danger",
@@ -349,13 +367,20 @@ Vue.createApp({
             this.stopBackgroundSync(); // Handles interval clearing and listener removal
             break;
           default:
-            this.authenticated = true;
-            this.records = fetchedData["account_records"];
-            this.processRestrictionText();
-            sessionStorage.setItem("account", this.account);
-            sessionStorage.setItem("password", this.password);
-            this.setupBackgroundSync(); // Start background sync after successful login
+            // Handle other specific errors or generic failure
+            this.account = "";
+            this.password = "";
+            this.authenticated = false;
+            this.stopBackgroundSync();
+            break;
         }
+      } else if (!fetchedData) {
+        // Handle case where fetchRecords failed completely (e.g., network error)
+        // Alert should have been shown by postRequest/fetchRecords
+        this.account = "";
+        this.password = "";
+        this.authenticated = false;
+        this.stopBackgroundSync();
       }
     },
 
