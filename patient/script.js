@@ -28,6 +28,7 @@ Vue.createApp({
       bootstrapAlertClass: "alert-danger", // Default class
       confirmMessage: "",
       confirmResolver: null, // For Bootstrap confirm modal promise
+      isLoading: false, // Generic loading state for API calls
       confirming: false, // Flag to prevent sync/actions during confirmation modal
       removingRecord: false, // Flag during record removal confirmation/API call
 
@@ -124,6 +125,7 @@ Vue.createApp({
 
   // --- Lifecycle Hooks ---
   async created() {
+    this.isLoading = true;
     // Load essential configs first
     await this.fetchConfig(); // Loads apiUrl, API events and messages
     await this.loadLanguageData(); // Loads supported languages and texts
@@ -145,6 +147,7 @@ Vue.createApp({
       this.password = passwordToUse;
       await this.authenticate(); // This fetches initial records if successful
     }
+    this.isLoading = false;
   },
 
   mounted() {
@@ -279,6 +282,55 @@ Vue.createApp({
       this.currentDate = `${year}.${month}.${day} (${dayOfWeek})`;
       this.currentTime = `${hours}:${minutes}:${seconds}`;
       this.currentDateYY_MM_DD = `${year}_${month}_${day}`; // Key format
+    },
+
+    // --- API Communication ---
+    /** Generic POST request handler */
+    async postRequest(payload) {
+      if (!this.apiUrl) {
+        this.showAlert(
+          this.curLangText?.api_url_missing || "API URL not configured.",
+          "danger",
+        );
+        throw new Error("API URL is not configured.");
+      }
+      this.isLoading = true; // Show loading state
+      try {
+        const response = await fetch(this.apiUrl, {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          let errorData = {
+            message: `Request failed with status ${response.status}`,
+          };
+          try {
+            const errorJson = await response.json();
+            errorData = { ...errorData, ...errorJson }; // Merge messages if possible
+          } catch (e) {
+            /* Ignore if response body is not JSON */
+          }
+          throw new Error(errorData.message);
+        }
+
+        console.log(`API Request successful for event: ${payload?.event}`);
+        return await response.json();
+      } catch (error) {
+        console.error("postRequest Error:", error);
+        this.showAlert(
+          `${this.curLangText?.api_request_failed || "API Request Failed"}: ${error.message}`,
+          "danger",
+        );
+        throw error; // Re-throw for specific handling in calling functions
+      } finally {
+        this.isLoading = false; // Hide loading state
+      }
     },
 
     async fetchRecords() {
