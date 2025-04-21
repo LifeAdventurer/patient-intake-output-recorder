@@ -234,18 +234,25 @@ Vue.createApp({
       console.log("Selected language set to:", this.selectedLanguage);
     },
 
-    initRecords(currentDate) {
-      const num = currentDate.split("_");
-      this.records[currentDate] = {
-        data: [],
-        count: 0,
-        recordDate: `${num[1]}/${num[2]}`,
-        foodSum: 0,
-        waterSum: 0,
-        urinationSum: 0,
-        defecationSum: 0,
-        weight: "NaN",
-      };
+    /** Initializes the structure for a given date if it doesn't exist */
+    initRecordsIfNeeded(dateKey) {
+      if (!this.records[dateKey]) {
+        console.log(`Initializing records for date: ${dateKey}`);
+        const dateParts = dateKey.split("_"); // Expects YYYY_M_D
+        const displayDate =
+          dateParts.length === 3 ? `${dateParts[1]}/${dateParts[2]}` : dateKey; // Basic formatting
+        // Use Vue.set or direct assignment for reactivity. Direct should work as `records` is reactive.
+        this.records[dateKey] = {
+          data: [], // Array to hold individual entries { time, food, water, ... }
+          count: 0,
+          recordDate: displayDate, // Formatted date M/D for display
+          foodSum: 0,
+          waterSum: 0,
+          urinationSum: 0,
+          defecationSum: 0,
+          weight: "NaN",
+        };
+      }
     },
 
     updateDateTime() {
@@ -417,6 +424,9 @@ Vue.createApp({
       const currentDate = `${d.getFullYear()}_${d.getMonth() + 1}_${(
         "0" + d.getDate()
       ).slice(-2)}`;
+      const currentDateKey = this.currentDateYY_MM_DD;
+
+      this.initRecordsIfNeeded(currentDateKey);
       // Food, Water, Urination, Defecation
       if (!this.handleCustomInput()) {
         this.showAlert(
@@ -431,9 +441,6 @@ Vue.createApp({
         this.inputUrination ||
         this.inputDefecation
       ) {
-        if (!this.records[currentDate]) {
-          this.initRecords(currentDate);
-        }
         const currentData = {
           time: `${("0" + d.getHours()).slice(-2)}:${(
             "0" + d.getMinutes()
@@ -491,9 +498,6 @@ Vue.createApp({
       if (isNaN(inputWeight) || inputWeight < 0.01 || inputWeight > 300) {
         this.showAlert(this.curLangText.weight_abnormal, "danger");
       } else {
-        if (!this.records[currentDate]) {
-          this.initRecords(currentDate);
-        }
         this.records[currentDate]["weight"] = `${
           Math.round(inputWeight * 100) / 100
         } kg`;
