@@ -29,6 +29,7 @@ Vue.createApp({
       confirmMessage: "",
       confirmResolver: null, // For Bootstrap confirm modal promise
       isLoading: false, // Generic loading state for API calls
+      isUpdating: false, // Specific flag for updateRecords call
       isFetching: false, // Specific flag for fetchRecords call
       confirming: false, // Flag to prevent sync/actions during confirmation modal
       removingRecord: false, // Flag during record removal confirmation/API call
@@ -336,9 +337,9 @@ Vue.createApp({
 
     /** Fetches the records for the currently authenticated patient */
     async fetchRecords() {
-      if (this.isFetching || this.confirming) {
+      if (this.isFetching || this.isUpdating || this.confirming) {
         // console.log("Fetch skipped due to active operation.");
-        return; // Don't fetch if  already fetching, or confirming
+        return; // Don't fetch if already fetching, updating, or confirming
       }
       console.log("Fetching records...");
       this.isFetching = true;
@@ -374,42 +375,46 @@ Vue.createApp({
       }
     },
 
+    /** Updates the patient's records on the server */
     async updateRecords() {
+      if (this.isUpdating || this.isFetching) {
+        console.warn("Update skipped, another update/fetch in progress.");
+        return false; // Prevent concurrent updates
+      }
+      console.log("Updating records...");
+      this.isUpdating = true;
       try {
-        const response = await fetch(this.apiUrl, {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            event: this.events.UPDATE_RECORD,
-            account: this.account,
-            password: this.password,
-            patient: this.account,
-            data: this.records,
-          }),
-        });
+        const payload = {
+          event: this.events.UPDATE_RECORD,
+          account: this.account,
+          password: this.password,
+          patient: this.account,
+          data: this.records, // Send the entire local records object
+        };
+        const response = await this.postRequest(payload);
 
-        if (!response.ok) {
-          console.error(
-            "Network response was not ok, failed to post patient records.",
-          );
-          return false;
-        }
-
-        const { message } = await response.json();
-        if (message === this.events.messages.UPDATE_RECORD_SUCCESS) {
-          console.log("Patient records posted successfully");
+        if (response.message === this.events.messages.UPDATE_RECORD_SUCCESS) {
+          console.log("Patient records updated successfully on server.");
           return true;
         } else {
-          console.error("Error:", message);
+          console.error(
+            "Failed to update records on server:",
+            response.message,
+          );
+          this.showAlert(
+            `${this.curLangText?.update_failed || "Update Failed"}: ${response.message}`,
+            "danger",
+          );
+          // Consider reverting local changes or re-fetching on critical failure
+          // await this.fetchRecords(); // Option: Re-sync on failure
           return false;
         }
       } catch (error) {
-        console.error("Error during posting patient records:", error);
+        console.error("Error during updateRecords:", error.message);
+        // Alert potentially shown by postRequest already
         return false;
+      } finally {
+        this.isUpdating = false;
       }
     },
 
