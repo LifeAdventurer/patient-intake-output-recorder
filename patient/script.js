@@ -7,7 +7,7 @@ Vue.createApp({
       authenticated: false,
       apiUrl: "", // Loaded from config.json
       events: {}, // Loaded from events.json
-      records: {}, // Holds patient's fetched record data { date_key: { data: [...], ...}, controlKeys... }
+      records: {}, // Holds patient's fetched record data { date_key: { data: [...], ... }, controlKeys... }
 
       // --- Input State ---
       inputFood: 0,
@@ -36,7 +36,7 @@ Vue.createApp({
       supportedLanguages: [], // Loaded from supported_languages.json
       curLangTexts: {}, // Loaded from lang_texts.json
 
-      // --- Configuration / Constants
+      // --- Configuration / Constants ---
       // Predefined options for quick input (consider moving to config if dynamic)
       options: [
         { value: 50, label: "50" },
@@ -49,6 +49,7 @@ Vue.createApp({
         { value: 400, label: "400" },
       ],
       dietaryItems: ["food", "water", "urination", "defecation"], // For iteration
+      dateTimeIntervalId: null,
 
       // --- Date/Time ---
       currentDate: "", // Formatted date string for display
@@ -241,16 +242,28 @@ Vue.createApp({
 
     updateDateTime() {
       const d = new Date();
-      const dayOfWeek = this.curLangText.day_of_week;
-      this.currentDate = `${d.getFullYear()}.${d.getMonth() + 1}.${(
-        "0" + d.getDate()
-      ).slice(-2)} (${dayOfWeek[d.getDay()]})`;
-      this.currentTime = `${("0" + d.getHours()).slice(-2)}:${(
-        "0" + d.getMinutes()
-      ).slice(-2)}:${("0" + d.getSeconds()).slice(-2)}`;
-      this.currentDateYY_MM_DD = `${d.getFullYear()}_${d.getMonth() + 1}_${(
-        "0" + d.getDate()
-      ).slice(-2)}`;
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1; // JS months are 0-indexed
+      const day = ("0" + d.getDate()).slice(-2);
+      const hours = ("0" + d.getHours()).slice(-2);
+      const minutes = ("0" + d.getMinutes()).slice(-2);
+      const seconds = ("0" + d.getSeconds()).slice(-2);
+
+      // Use language-specific day names if available
+      const dayNames = this.curLangText?.day_of_week || [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+      ]; // Default/Fallback
+      const dayOfWeek = dayNames[d.getDay()];
+
+      this.currentDate = `${year}.${month}.${day} (${dayOfWeek})`;
+      this.currentTime = `${hours}:${minutes}:${seconds}`;
+      this.currentDateYY_MM_DD = `${year}_${month}_${day}`; // Key format
     },
 
     async fetchRecords() {
