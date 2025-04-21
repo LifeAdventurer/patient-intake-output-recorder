@@ -678,26 +678,83 @@ Vue.createApp({
       return total >= limit ? "red" : "inherit";
     },
 
+    // --- Record Management ---
     async removeRecord(target) {
+      if (
+        !target ||
+        !target.attributes ||
+        !target.attributes.id ||
+        this.removingRecord ||
+        this.confirming
+      ) {
+        console.warn(
+          "Remove skipped: Invalid target or operation already in progress.",
+        );
+        return;
+      }
+      const idParts = target.attributes.id.textContent.split("-");
+      if (idParts.length !== 2) {
+        console.error(
+          "Invalid record ID format for removal:",
+          target.attributes.id.textContent,
+        );
+        return;
+      }
+      const [dateKey, indexStr] = idParts;
+      const index = parseInt(indexStr);
+
+      if (!this.records?.[dateKey]?.data?.[index]) {
+        console.error("Record data not found for removal:", dateKey, index);
+        return;
+      }
+
+      const recordToRemove = this.records[dateKey].data[index];
+
+      // Show confirmation
       this.confirming = true;
       const confirmed = await this.showConfirm(
-        this.curLangText.confirm_remove_record,
+        this.curLangText?.confirm_remove_record ||
+          "Confirm remove this record?",
       );
-      if (confirmed) {
-        this.removingRecord = true;
-        const [date, index] = target.attributes.id.textContent.split("-");
+      this.confirming = false;
+      if (!confirmed) {
+        console.log("Record removal cancelled.");
+        return;
+      }
 
-        const record = this.records[date]["data"][index];
-        this.records[date]["count"] -= 1;
-        for (const dietaryItem of this.dietaryItems) {
-          this.records[date][`${dietaryItem}Sum`] -= record[dietaryItem];
-        }
-        this.records[date]["data"].splice(index, 1);
+      // Proceed with removal
+      console.log(`Removing record at index ${index} for date ${dateKey}`);
+      this.removingRecord = true;
 
+      try {
+        // Update local sums *before* removing
+        const dailyRecord = this.records[dateKey];
+        dailyRecord.count = Math.max(0, dailyRecord.count - 1);
+        this.dietaryItems.forEach((item) => {
+          const value = recordToRemove[item] ?? 0;
+          dailyRecord[`${item}Sum`] = Math.max(
+            0,
+            (dailyRecord[`${item}Sum`] || 0) - value,
+          );
+        });
+
+        // Remove from local array
+        dailyRecord.data.splice(index, 1);
+
+        // Update backend
         await this.updateRecords();
+        this.showAlert(
+          this.curLangText?.record_removed_successfully || "Record removed.",
+          "success",
+        );
+      } catch (error) {
+        console.error("Error during record removal:", error);
+        // Alert potentially shown by updateRecords or postRequest
+        // Consider adding a specific removal error message or re-fetching to sync state
+        await this.fetchRecords(); // Re-sync on error
+      } finally {
         this.removingRecord = false;
       }
-      this.confirming = false;
     },
 
     // --- UI Helpers ---
