@@ -127,27 +127,29 @@ Vue.createApp({
     await this.loadSupportedLanguages();
     await this.loadLangTexts();
     this.loadSelectedLanguage();
+    this.updateDateTime();
+
+    // Attempt initial authentication (moved from mounted to ensure config is ready)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlAccount = urlParams.get("acct");
+    const urlPassword = urlParams.get("pw");
+    const sessionAccount = sessionStorage.getItem("account");
+    const sessionPassword = sessionStorage.getItem("password");
+
+    const accountToUse = urlAccount || sessionAccount;
+    const passwordToUse = urlPassword || sessionPassword;
+
+    if (accountToUse && passwordToUse) {
+      this.account = accountToUse;
+      this.password = passwordToUse;
+      await this.authenticate(); // This fetches initial records if successful
+    }
   },
 
-  async mounted() {
-    this.updateDateTime();
-    setInterval(this.updateDateTime, 1000);
-
-    const url = new URL(location.href);
-    const params = url.searchParams;
-    const account = params.has("acct")
-      ? params.get("acct")
-      : sessionStorage.getItem("account");
-    const password = params.has("pw")
-      ? params.get("pw")
-      : sessionStorage.getItem("password");
-
-    if (account && password) {
-      this.authenticated = false;
-      this.account = account;
-      this.password = password;
-      await this.authenticate();
-    }
+  mounted() {
+    // Set up intervals after component is mounted
+    this.dateTimeIntervalId = setInterval(this.updateDateTime, 1000);
+    globalThis.addEventListener("scroll", this.handleScroll);
 
     setInterval(async () => {
       if (this.authenticated && !this.confirming) {
@@ -162,11 +164,11 @@ Vue.createApp({
         }
       }
     }, 3000);
-
-    globalThis.addEventListener("scroll", this.handleScroll);
   },
 
   beforeUnmount() {
+    // Clean up intervals and event listeners
+    if (this.dateTimeIntervalId) clearInterval(this.dateTimeIntervalId);
     globalThis.removeEventListener("scroll", this.handleScroll);
   },
 
