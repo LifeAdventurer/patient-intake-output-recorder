@@ -17,7 +17,7 @@ Vue.createApp({
       customInputFood: "", // For custom value entry
       customInputWater: "", // For custom value entry
       customInputUrination: "", // For custom value entry
-      inputWeight: 0,
+      inputWeight: "", // Use empty string for easier validation/placeholder
 
       // --- UI State ---
       showPassword: false,
@@ -419,95 +419,174 @@ Vue.createApp({
       }
     },
 
-    async addData() {
-      const d = new Date();
-      const currentDate = `${d.getFullYear()}_${d.getMonth() + 1}_${(
-        "0" + d.getDate()
-      ).slice(-2)}`;
-      const currentDateKey = this.currentDateYY_MM_DD;
+    // --- Data Input & Processing ---
+    /** Validates and retrieves the numeric value from standard or custom inputs */
+    getNumericInput(standardValue, customValue) {
+      let value = 0;
+      if (standardValue === "custom") {
+        // Allow empty string in custom input to mean 0 after submit attempt
+        const parsed = parseInt(customValue);
+        if (!isNaN(parsed) && parsed >= 0) {
+          value = parsed;
+        } else if (customValue !== "" && (isNaN(parsed) || parsed < 0)) {
+          // Invalid custom input
+          return null; // Indicate error
+        }
+        // If customValue is "" and standard is "custom", treat as 0
+      } else {
+        const parsedStandard = parseInt(standardValue);
+        if (!isNaN(parsedStandard) && parsedStandard >= 0) {
+          value = parsedStandard;
+        }
+      }
+      return value;
+    },
 
-      this.initRecordsIfNeeded(currentDateKey);
-      // Food, Water, Urination, Defecation
-      if (!this.handleCustomInput()) {
+    async addData() {
+      // 1. Validate and get numeric inputs
+      const foodValue = this.getNumericInput(
+        this.inputFood,
+        this.customInputFood,
+      );
+      const waterValue = this.getNumericInput(
+        this.inputWater,
+        this.customInputWater,
+      );
+      const urinationValue = this.getNumericInput(
+        this.inputUrination,
+        this.customInputUrination,
+      );
+      const defecationValue =
+        parseInt(this.inputDefecation) >= 0
+          ? parseInt(this.inputDefecation)
+          : 0; // Simpler for defecation (no custom)
+
+      const weightValueStr = String(this.inputWeight).trim();
+      let weightToSave = null;
+      let weightError = false;
+
+      if (weightValueStr !== "") {
+        const parsedWeight = parseFloat(weightValueStr);
+        if (isNaN(parsedWeight) || parsedWeight <= 0 || parsedWeight > 300) {
+          // Allow 0? Validate range. Assuming > 0 and <= 300.
+          weightError = true;
+        } else {
+          weightToSave = Math.round(parsedWeight * 100) / 100; // Round to 2 decimal places
+        }
+      }
+
+      // Check for validation errors
+      if (
+        foodValue === null ||
+        waterValue === null ||
+        urinationValue === null
+      ) {
         this.showAlert(
           this.curLangText.please_enter_a_positive_integer,
           "danger",
         );
         return;
       }
-      if (
-        this.inputFood ||
-        this.inputWater ||
-        this.inputUrination ||
-        this.inputDefecation
-      ) {
-        const currentData = {
-          time: `${("0" + d.getHours()).slice(-2)}:${(
-            "0" + d.getMinutes()
-          ).slice(-2)}`,
-          food: parseInt(this.inputFood),
-          water: parseInt(this.inputWater),
-          urination: parseInt(this.inputUrination),
-          defecation: parseInt(this.inputDefecation),
-        };
-        const lastRecord = this.records[currentDate]["data"].pop();
-        if (lastRecord !== undefined) {
-          if (lastRecord["time"] === currentData["time"]) {
-            for (const dietaryItem of this.dietaryItems) {
-              lastRecord[dietaryItem] += currentData[dietaryItem];
-            }
-            this.records[currentDate]["data"].push(lastRecord);
-          } else {
-            this.records[currentDate]["data"].push(lastRecord);
-            this.records[currentDate]["data"].push(currentData);
-          }
-        } else {
-          this.records[currentDate]["data"].push(currentData);
-        }
-        this.records[currentDate]["count"] =
-          this.records[currentDate]["data"].length;
-        // sums
-        this.records[currentDate]["foodSum"] += parseInt(this.inputFood);
-        this.records[currentDate]["waterSum"] += parseInt(this.inputWater);
-        this.records[currentDate]["urinationSum"] += parseInt(
-          this.inputUrination,
+
+      if (weightError) {
+        this.showAlert(
+          this.curLangText?.weight_abnormal ||
+            "Weight input is invalid (must be > 0 and <= 300).",
+          "danger",
         );
-        this.records[currentDate]["defecationSum"] += parseInt(
-          this.inputDefecation,
-        );
-        // init again
-        this.inputFood = 0;
-        this.inputWater = 0;
-        this.inputUrination = 0;
-        this.inputDefecation = 0;
-        this.customInputFood = "";
-        this.customInputWater = "";
-        this.customInputUrination = "";
-        // post to database
-        if (await this.updateRecords()) {
-          this.showNotification = true;
-          setTimeout(() => {
-            this.hideNotification();
-          }, 2000);
-        }
-      }
-      if (this.inputWeight === 0) {
         return;
       }
-      const inputWeight = parseFloat(this.inputWeight);
-      if (isNaN(inputWeight) || inputWeight < 0.01 || inputWeight > 300) {
-        this.showAlert(this.curLangText.weight_abnormal, "danger");
-      } else {
-        this.records[currentDate]["weight"] = `${
-          Math.round(inputWeight * 100) / 100
-        } kg`;
-        // init again
-        this.inputWeight = 0;
-        // post to database
-        if ((await this.updateRecords()) && this.showNotification === false) {
+
+      // Check if there's anything to save
+      const hasDietaryData =
+        foodValue > 0 ||
+        waterValue > 0 ||
+        urinationValue > 0 ||
+        defecationValue > 0;
+      const hasWeightData = weightToSave !== null;
+
+      if (!hasDietaryData && !hasWeightData) {
+        this.showAlert(
+          this.curLangText?.no_data_to_submit ||
+            "Please enter some data or weight to record.",
+          "warning",
+        );
+        return; // Nothing to add
+      }
+
+      // 2. Prepare data and update records
+      const d = new Date();
+      const currentTimeFormatted = `${("0" + d.getHours()).slice(-2)}:${("0" + d.getMinutes()).slice(-2)}`;
+      const currentDateKey = this.currentDateYY_MM_DD;
+
+      this.initRecordsIfNeeded(currentDateKey); // Ensure today's record structure exists
+
+      let recordUpdated = false;
+
+      // Add dietary data if present
+      if (hasDietaryData) {
+        const currentDietaryData = {
+          time: currentTimeFormatted,
+          food: foodValue,
+          water: waterValue,
+          urination: urinationValue,
+          defecation: defecationValue,
+        };
+        const dailyDataArray = this.records[currentDateKey].data;
+
+        // Merging Logic (ensure robustness)
+        const lastRecord = dailyDataArray.pop();
+        if (lastRecord && lastRecord.time === currentDietaryData.time) {
+          console.log("Merging with last record at time:", lastRecord.time);
+          this.dietaryItems.forEach((item) => {
+            lastRecord[item] =
+              (lastRecord[item] || 0) + currentDietaryData[item];
+          });
+          dailyDataArray.push(lastRecord); // Push merged record back
+        } else {
+          if (lastRecord) dailyDataArray.push(lastRecord); // Push previous back if different time
+          dailyDataArray.push(currentDietaryData); // Push new record
+        }
+        // // --- Simplified Add Logic (No Merging) ---
+        // dailyDataArray.push(currentDietaryData);
+        // console.log("Added new dietary record:", currentDietaryData);
+
+        // Update sums and count
+        this.records[currentDateKey].count = dailyDataArray.length;
+        this.records[currentDateKey].foodSum += foodValue;
+        this.records[currentDateKey].waterSum += waterValue;
+        this.records[currentDateKey].urinationSum += urinationValue;
+        this.records[currentDateKey].defecationSum += defecationValue;
+        recordUpdated = true;
+      }
+
+      // Update weight if present
+      if (hasWeightData) {
+        // Weight is stored per day, not per entry
+        this.records[currentDateKey].weight = weightToSave; // Store the numeric value
+        console.log(
+          `Updated weight for ${currentDateKey} to: ${weightToSave} kg`,
+        );
+        recordUpdated = true;
+      }
+
+      // 3. Reset inputs
+      this.inputFood = 0;
+      this.inputWater = 0;
+      this.inputUrination = 0;
+      this.inputDefecation = 0;
+      this.customInputFood = "";
+      this.customInputWater = "";
+      this.customInputUrination = "";
+      this.inputWeight = "";
+
+      // 4. Update backend if changes were made
+      if (recordUpdated) {
+        if (await this.updateRecords()) {
+          // Show success notification
           this.showNotification = true;
           setTimeout(() => {
-            this.hideNotification();
+            this.showNotification = false;
           }, 2000);
         }
       }
@@ -644,32 +723,6 @@ Vue.createApp({
         this.confirmResolver(result);
         this.confirmResolver = null;
       }
-    },
-
-    hideNotification() {
-      this.showNotification = false;
-    },
-
-    handleCustomInput() {
-      if (this.inputFood === "custom") {
-        const intValue = parseInt(this.customInputFood);
-        if (isNaN(intValue) || intValue < 0) return false;
-        this.inputFood = intValue;
-        this.customInputFood = "";
-      }
-      if (this.inputWater === "custom") {
-        const intValue = parseInt(this.customInputWater);
-        if (isNaN(intValue) || intValue < 0) return false;
-        this.inputWater = intValue;
-        this.customInputWater = "";
-      }
-      if (this.inputUrination === "custom") {
-        const intValue = parseInt(this.customInputUrination);
-        if (isNaN(intValue) || intValue < 0) return false;
-        this.inputUrination = intValue;
-        this.customInputUrination = "";
-      }
-      return true;
     },
 
     changeLanguage(languageCode) {
