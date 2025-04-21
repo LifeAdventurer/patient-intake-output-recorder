@@ -492,30 +492,41 @@ Vue.createApp({
       }
     },
 
+    /** Determines color for food sum based on restrictions */
     getFoodSumColor() {
-      let exceed = false;
-      if (this.records["foodCheckboxChecked"]) {
-        exceed =
-          this.records[this.currentDateYY_MM_DD]["foodSum"] +
-            (this.records["waterCheckboxChecked"]
-              ? this.records[this.currentDateYY_MM_DD]["waterSum"]
-              : 0) >
-          this.records["limitAmount"];
+      const todayRecord = this.records?.[this.currentDateYY_MM_DD];
+      if (
+        !todayRecord ||
+        !this.records.foodCheckboxChecked ||
+        !this.records.limitAmount ||
+        isNaN(parseInt(this.records.limitAmount))
+      ) {
+        return "inherit";
       }
-      return exceed ? "red" : "inherit";
+      const limit = parseInt(this.records.limitAmount);
+      const foodSum = todayRecord.foodSum ?? 0;
+      const waterSum = todayRecord.waterSum ?? 0;
+      const total =
+        foodSum + (this.records.waterCheckboxChecked ? waterSum : 0);
+      return total >= limit ? "red" : "inherit";
     },
 
+    /** Determines color for water sum based on restrictions */
     getWaterSumColor() {
-      let exceed = false;
-      if (this.records["waterCheckboxChecked"]) {
-        exceed =
-          this.records[this.currentDateYY_MM_DD]["waterSum"] +
-            (this.records["foodCheckboxChecked"]
-              ? this.records[this.currentDateYY_MM_DD]["foodSum"]
-              : 0) >
-          this.records["limitAmount"];
+      const todayRecord = this.records?.[this.currentDateYY_MM_DD];
+      if (
+        !todayRecord ||
+        !this.records.waterCheckboxChecked ||
+        !this.records.limitAmount ||
+        isNaN(parseInt(this.records.limitAmount))
+      ) {
+        return "inherit";
       }
-      return exceed ? "red" : "inherit";
+      const limit = parseInt(this.records.limitAmount);
+      const foodSum = todayRecord.foodSum ?? 0;
+      const waterSum = todayRecord.waterSum ?? 0;
+      const total = waterSum + (this.records.foodCheckboxChecked ? foodSum : 0);
+      return total >= limit ? "red" : "inherit";
     },
 
     async removeRecord(target) {
