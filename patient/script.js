@@ -595,9 +595,14 @@ Vue.createApp({
     },
 
     changeLanguage(languageCode) {
-      this.selectedLanguage = languageCode;
-      localStorage.setItem("selectedLanguageCode", languageCode);
-      this.processRestrictionText();
+      if (this.suppportedLanguages.some((lang) => lang.code === languageCode)) {
+        this.selectedLanguage = languageCode;
+        // Watcher will handle localStorage update and text processing
+      } else {
+        console.warn(
+          `Attempted to change to unsupported language: ${languageCode}`,
+        );
+      }
     },
 
     scrollToTop() {
