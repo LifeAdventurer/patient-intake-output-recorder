@@ -152,19 +152,10 @@ Vue.createApp({
     this.dateTimeIntervalId = setInterval(this.updateDateTime, 1000);
     globalThis.addEventListener("scroll", this.handleScroll);
 
-    setInterval(async () => {
-      if (this.authenticated && !this.confirming) {
-        const fetchedData = await this.fetchRecords();
-        if (
-          !this.confirming &&
-          Object.hasOwn(fetchedData, "message") &&
-          fetchedData.message === this.events.messages.FETCH_RECORD_SUCCESS
-        ) {
-          this.records = fetchedData["account_records"];
-          this.processRestrictionText();
-        }
-      }
-    }, 3000);
+    // Set up background data synchronization and visibility handling only if authenticated
+    if (this.authenticated) {
+      this.setupBackgroundSync();
+    }
   },
 
   beforeUnmount() {
@@ -628,5 +619,48 @@ Vue.createApp({
     handleScroll() {
       this.showScrollButton = globalThis.scrollY > 20;
     },
-  },
+
+    // --- Background Sync ---
+    setupBackgroundSync() {
+      document.addEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange,
+      );
+      this.handleVisibilityChange(); // Run once to set initial state
+    },
+
+    startBackgroundSyncInterval() {
+      if (this.backgroundSyncIntervalId === null && this.authenticated) {
+        console.log("Starting background sync interval...");
+        // Run fetch immediately once, then set interval
+        this.fetchRecords();
+        // Fetch records periodically
+        this.backgroundSyncIntervalId = setInterval(this.fetchRecords, 3000);
+      }
+    },
+
+    stopBackgroundSync() {
+      if (this.backgroundSyncIntervalId !== null) {
+        console.log("Stopping background sync interval.");
+        clearInterval(this.backgroundSyncIntervalId);
+        this.backgroundSyncIntervalId = null;
+      }
+      document.removeEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange,
+      );
+    },
+
+    handleVisibilityChange() {
+      if (!this.authenticated) return; // Only run if logged in
+
+      if (document.hidden) {
+        console.log("Page hidden, stopping background sync.");
+        this.stopBackgroundSync(); // Clear interval when tab is hidden
+      } else {
+        console.log("Page visible, starting background sync.");
+        this.startBackgroundSyncInterval(); // Start interval (will fetch once immediately)
+      }
+    },
+  }, // End Methods
 }).mount("#app");
