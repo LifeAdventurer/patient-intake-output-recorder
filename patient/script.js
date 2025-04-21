@@ -617,7 +617,7 @@ Vue.createApp({
     },
 
     handleScroll() {
-      this.showScrollButton = globalThis.scrollY > 20;
+      this.showScrollButton = globalThis.scrollY > 200; // Show after scrolling down a bit more
     },
 
     // --- Background Sync ---
