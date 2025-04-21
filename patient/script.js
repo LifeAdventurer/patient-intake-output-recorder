@@ -124,8 +124,7 @@ Vue.createApp({
   // --- Lifecycle Hooks ---
   async created() {
     await this.fetchConfig(); // Loads apiUrl, API events and messages
-    await this.loadSupportedLanguages();
-    await this.loadLangTexts();
+    await this.loadLanguageData(); // Loads supported languages and texts
     this.loadSelectedLanguage();
     this.updateDateTime();
 
@@ -189,21 +188,30 @@ Vue.createApp({
       }
     },
 
-    async loadSupportedLanguages() {
+    async loadLanguageData() {
       try {
-        const response = await fetch("./supported_languages.json");
-        this.supportedLanguages = await response.json();
-      } catch (error) {
-        console.error("Failed to load supported languages", error);
-      }
-    },
+        const [langResponse, textsResponse] = await Promise.all([
+          fetch("./supported_languages.json"),
+          fetch("./lang_texts.json"),
+        ]);
 
-    async loadLangTexts() {
-      try {
-        const response = await fetch("./lang_texts.json");
-        this.curLangTexts = await response.json();
+        if (!langResponse.ok)
+          throw new Error(
+            `Failed to load supported_languages.json: ${langResponse.status}`,
+          );
+        this.supportedLanguages = await langResponse.json();
+
+        if (!textsResponse.ok)
+          throw new Error(
+            `Failed to load lang_texts.json: ${textsResponse.status}`,
+          );
+        this.curLangTexts = await textsResponse.json();
+
+        console.log("Language data loaded.");
       } catch (error) {
-        console.error("Failed to load language texts", error);
+        console.error("Failed to load language data:", error);
+        // Show alert in default language as curLangText might not be available
+        this.showAlert("Failed to load language files.", "danger");
       }
     },
 
