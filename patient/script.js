@@ -183,10 +183,10 @@ Vue.createApp({
         console.log("Configuration and events loaded.");
       } catch (error) {
         console.error("Failed to load config.json or events.json:", error);
-        // this.showAlert(
-        //   this.curLangText?.config_load_error || "無法載入設定",
-        //   "danger",
-        // );
+        this.showAlert(
+          this.curLangText?.config_load_error || "Failed to load config.",
+          "danger",
+        );
       }
     },
 
@@ -351,6 +351,11 @@ Vue.createApp({
     // --- Authentication ---
     async authenticate() {
       if (!this.account || !this.password) {
+        this.showAlert(
+          this.curLangText?.enter_credentials ||
+            "Please enter account and password.",
+          "danger",
+        );
         return;
       }
       console.log("Attempting patient authentication for:", this.account);
@@ -369,24 +374,36 @@ Vue.createApp({
             this.setupBackgroundSync(); // Start background sync after successful login
             break;
           case this.events.messages.ACCT_NOT_EXIST:
-            this.showAlert(this.curLangText.nonexistent_account, "danger");
+            this.showAlert(
+              this.curLangText?.nonexistent_account ||
+                "Account does not exist.",
+              "danger",
+            );
             this.resetCredentialsAndState();
             break;
           case this.events.messages.AUTH_FAIL_PASSWORD:
-            this.showAlert(this.curLangText.incorrect_password, "danger");
+            this.showAlert(
+              this.curLangText?.incorrect_password || "Incorrect password.",
+              "danger",
+            );
             this.password = "";
             sessionStorage.removeItem("password");
             this.authenticated = false;
             break;
           case this.events.messages.INVALID_ACCT_TYPE: // Should ideally not happen for patient login
             this.showAlert(
-              this.curLangText.account_without_permission,
+              this.curLangText?.account_without_permission ||
+                "Account type invalid for login.",
               "danger",
             );
             this.resetCredentialsAndState();
             break;
           default:
             // Handle other specific errors or generic failure
+            this.showAlert(
+              `${this.curLangText?.login_failed || "Login Failed"}: ${fetchedData.message}`,
+              "danger",
+            );
             this.resetCredentialsAndState();
             break;
         }
@@ -412,7 +429,9 @@ Vue.createApp({
     },
 
     async confirmLogout() {
-      const confirmed = await this.showConfirm(this.curLangText.confirm_logout);
+      const confirmed = await this.showConfirm(
+        this.curLangText?.confirm_logout || "Confirm logout?",
+      );
       if (confirmed) {
         console.log("Logging out patient:", this.account);
         this.resetCredentialsAndState();
@@ -482,7 +501,8 @@ Vue.createApp({
         urinationValue === null
       ) {
         this.showAlert(
-          this.curLangText.please_enter_a_positive_integer,
+          this.curLangText?.please_enter_a_positive_integer ||
+            "Custom input must be a non-negative number.",
           "danger",
         );
         return;
