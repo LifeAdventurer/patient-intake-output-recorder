@@ -161,6 +161,7 @@ Vue.createApp({
   beforeUnmount() {
     // Clean up intervals and event listeners
     if (this.dateTimeIntervalId) clearInterval(this.dateTimeIntervalId);
+    this.stopBackgroundSync(); // Handles interval clearing and listener removal
     globalThis.removeEventListener("scroll", this.handleScroll);
   },
 
@@ -335,6 +336,7 @@ Vue.createApp({
             );
             this.account = "";
             this.password = "";
+            this.stopBackgroundSync(); // Stop sync if logged out due to error
             break;
           case this.events.messages.AUTH_FAIL_PASSWORD:
             this.showAlert(this.curLangText.incorrect_password, "alert-danger");
@@ -347,6 +349,7 @@ Vue.createApp({
             );
             this.account = "";
             this.password = "";
+            this.stopBackgroundSync(); // Handles interval clearing and listener removal
             break;
           default:
             this.authenticated = true;
@@ -354,6 +357,7 @@ Vue.createApp({
             this.processRestrictionText();
             sessionStorage.setItem("account", this.account);
             sessionStorage.setItem("password", this.password);
+            this.setupBackgroundSync(); // Start background sync after successful login
         }
       }
     },
