@@ -330,22 +330,19 @@ Vue.createApp({
       if (Object.hasOwn(fetchedData, "message")) {
         switch (fetchedData.message) {
           case this.events.messages.ACCT_NOT_EXIST:
-            this.showAlert(
-              this.curLangText.nonexistent_account,
-              "alert-danger",
-            );
+            this.showAlert(this.curLangText.nonexistent_account, "danger");
             this.account = "";
             this.password = "";
             this.stopBackgroundSync(); // Stop sync if logged out due to error
             break;
           case this.events.messages.AUTH_FAIL_PASSWORD:
-            this.showAlert(this.curLangText.incorrect_password, "alert-danger");
+            this.showAlert(this.curLangText.incorrect_password, "danger");
             this.password = "";
             break;
           case this.events.messages.INVALID_ACCT_TYPE:
             this.showAlert(
               this.curLangText.account_without_permission,
-              "alert-danger",
+              "danger",
             );
             this.account = "";
             this.password = "";
@@ -386,7 +383,7 @@ Vue.createApp({
       if (!this.handleCustomInput()) {
         this.showAlert(
           this.curLangText.please_enter_a_positive_integer,
-          "alert-danger",
+          "danger",
         );
         return;
       }
@@ -454,7 +451,7 @@ Vue.createApp({
       }
       const inputWeight = parseFloat(this.inputWeight);
       if (isNaN(inputWeight) || inputWeight < 0.01 || inputWeight > 300) {
-        this.showAlert(this.curLangText.weight_abnormal, "alert-danger");
+        this.showAlert(this.curLangText.weight_abnormal, "danger");
       } else {
         if (!this.records[currentDate]) {
           this.initRecords(currentDate);
@@ -543,14 +540,34 @@ Vue.createApp({
       this.confirming = false;
     },
 
-    showAlert(message, type = "success") {
-      this.bootstrapAlertMessage = message;
-      this.bootstrapAlertClass =
-        type === "success" ? "alert-success" : "alert-danger";
+    // --- UI Helpers ---
+    showAlert(message, type = "success", duration = 5000) {
+      // Use language strings if available
+      const msg = this.curLangText?.[message] || message;
 
-      setTimeout(() => {
+      this.bootstrapAlertMessage = msg;
+      switch (type) {
+        case "danger":
+          this.bootstrapAlertClass = "alert-danger";
+          break;
+        case "warning":
+          this.bootstrapAlertClass = "alert-warning";
+          break;
+        case "info":
+          this.bootstrapAlertClass = "alert-info";
+          break;
+        case "success":
+        default:
+          this.bootstrapAlertClass = "alert-success";
+          break;
+      }
+      // Clear previous timeout if any
+      if (this.alertTimeoutId) clearTimeout(this.alertTimeoutId);
+      // Set new timeout
+      this.alertTimeoutId = setTimeout(() => {
         this.bootstrapAlertMessage = "";
-      }, 5000);
+        this.alertTimeoutId = null;
+      }, duration);
     },
 
     showConfirm(message) {
