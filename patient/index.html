@@ -395,27 +395,45 @@
           </div>
         </div>
 
-        <!-- Add new record button -->
-        <div class="row mb-2">
-          <div class="col text-center">
-            <button type="submit" class="btn btn-primary mb-2" @click="addData">
-              {{ curLangText.create_new_record }}
-            </button>
-            <div
-              v-if="showNotification"
-              class="alert alert-success alert-dismissible fade show"
-              role="alert"
-              style="font-size: 24px"
+        <div class="row mb-3">
+          <div class="col text-center position-relative">
+            <button
+              type="button"
+              class="btn btn-primary btn-lg"
+              @click="addData"
+              :disabled="isUpdating"
             >
-              <i class="fa-solid fa-check-circle"></i>
-              {{ curLangText.data_added_successfully }}
-              <button
-                type="button"
-                class="btn-close"
-                @click="hideNotification"
-                aria-label="Close"
-              ></button>
-            </div>
+              <span
+                v-if="isUpdating"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              <i v-else class="fas fa-plus-circle me-2"></i>
+              {{ isUpdating ? (curLangText?.saving || 'Saving...') :
+              (curLangText?.create_new_record || 'Add Record') }}
+            </button>
+            <transition name="fade">
+              <div
+                v-if="showNotification"
+                class="alert alert-success alert-dismissible d-inline-flex align-items-center fade show ms-3 p-2"
+                role="alert"
+                style="
+                  position: absolute;
+                  top: 50%;
+                  transform: translateY(-50%);
+                "
+              >
+                <i class="fas fa-check-circle me-2"></i>
+                {{ curLangText?.data_added_successfully || 'Record Saved!' }}
+                <button
+                  type="button"
+                  class="btn-close ms-2 p-1"
+                  @click="hideNotification"
+                  aria-label="Close"
+                ></button>
+              </div>
+            </transition>
           </div>
         </div>
 
