@@ -121,28 +121,6 @@
             </button>
           </div>
         </div>
-        <footer
-          v-if="!authenticated"
-          class="footer py-3 bg-white fixed-bottom border-top"
-        >
-          <div class="container text-center text-md-start">
-            <div class="row align-items-center">
-              <div class="col-md-5 text-muted small">
-                © 2023–2025 LifeAdventurer. All rights reserved.
-              </div>
-              <div class="col-md-3 text-muted small">
-                Code licensed
-                <a
-                  href="https://github.com/LifeAdventurer/patient-intake-output-recorder/blob/main/LICENSE"
-                  >GPL-3.0</a
-                >
-              </div>
-              <div class="col-md-2 text-muted small">
-                Version: <strong>v1.2.0</strong>
-              </div>
-            </div>
-          </div>
-        </footer>
       </template>
       <template v-else>
         <!-- DATE and TIME -->
@@ -655,6 +633,31 @@
           </div>
         </div>
       </template>
+
+      <footer
+        v-if="!authenticated"
+        class="footer py-3 bg-white fixed-bottom border-top"
+      >
+        <div class="container text-center text-md-start">
+          <div class="row align-items-center">
+            <div class="col-md-5 text-muted small">
+              © 2023–2025 LifeAdventurer | All rights reserved
+            </div>
+            <div class="col-md-3 text-muted small">
+              Code licensed
+              <a
+                href="https://github.com/LifeAdventurer/patient-intake-output-recorder/blob/main/LICENSE"
+                target="_blank"
+                rel="noopener noreferrer"
+                >GPL-3.0</a
+              >
+            </div>
+            <div class="col-md-2 text-muted small">
+              Version: <strong>v1.2.0</strong>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
 
     <script
