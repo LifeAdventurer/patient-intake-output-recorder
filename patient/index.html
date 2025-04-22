@@ -616,11 +616,11 @@
           <i class="fa-solid fa-arrow-up"></i>
         </button>
 
-        <!-- Bootstrap Confirm Modal -->
         <div
           class="modal fade"
           id="confirmModal"
           tabindex="-1"
+          data-bs-backdrop="static"
           aria-labelledby="confirmModalLabel"
           aria-hidden="true"
         >
@@ -628,15 +628,20 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="confirmModalLabel">
-                  {{ curLangText.confirm_action }}
+                  <i class="fas fa-question-circle me-2 text-warning"></i>{{
+                  curLangText?.confirm_action || 'Confirm Action' }}
                 </h5>
                 <button
                   type="button"
                   class="btn-close"
                   data-bs-dismiss="modal"
+                  aria-label="Close"
+                  @click="handleConfirm(false)"
                 ></button>
               </div>
-              <div class="modal-body">{{ confirmMessage }}</div>
+              <div class="modal-body">
+                <p style="white-space: pre-wrap">{{ confirmMessage }}</p>
+              </div>
               <div class="modal-footer">
                 <button
                   type="button"
@@ -644,7 +649,7 @@
                   data-bs-dismiss="modal"
                   @click="handleConfirm(false)"
                 >
-                  {{ curLangText.cancel }}
+                  {{ curLangText?.cancel || 'Cancel' }}
                 </button>
                 <button
                   type="button"
@@ -652,7 +657,7 @@
                   data-bs-dismiss="modal"
                   @click="handleConfirm(true)"
                 >
-                  {{ curLangText.confirm }}
+                  {{ curLangText?.confirm || 'Confirm' }}
                 </button>
               </div>
             </div>
