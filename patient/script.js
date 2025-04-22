@@ -173,6 +173,11 @@ Vue.createApp({
   // --- Methods ---
   methods: {
     // --- Initialization & Configuration ---
+    /**
+     * Load app config (apiUrl) and event definitions.
+     * @returns {Promise<void>}
+     * @throws {Error} If config.json or events.json can’t be fetched or parsed.
+     */
     async fetchConfig() {
       try {
         const response = await fetch("./config.json");
@@ -194,7 +199,11 @@ Vue.createApp({
         );
       }
     },
-
+    /**
+     * Load supported language list and translation texts.
+     * @returns {Promise<void>}
+     * @throws {Error} If supported_languages.json or lang_texts.json fails to load.
+     */
     async loadLanguageData() {
       try {
         const [langResponse, textsResponse] = await Promise.all([
@@ -287,7 +296,12 @@ Vue.createApp({
     },
 
     // --- API Communication ---
-    /** Generic POST request handler */
+    /**
+     * Send a POST to the configured API.
+     * @param {object} payload – Must include `{ event, account, password, … }`.
+     * @returns {Promise<object>} The parsed JSON response.
+     * @throws {Error} On network failure or non‑OK HTTP status.
+     */
     async postRequest(payload) {
       if (!this.apiUrl) {
         this.showAlert(
@@ -335,7 +349,10 @@ Vue.createApp({
       }
     },
 
-    /** Fetches the records for the currently authenticated patient */
+    /**
+     * Fetch this patient’s records from the server (also serves as auth check).
+     * @returns {Promise<{ message: string, account_records?: object }>}
+     */
     async fetchRecords() {
       if (this.isFetching || this.isUpdating || this.confirming) {
         // console.log("Fetch skipped due to active operation.");
@@ -375,7 +392,10 @@ Vue.createApp({
       }
     },
 
-    /** Updates the patient's records on the server */
+    /**
+     * Push local `this.records` up to the server.
+     * @returns {Promise<boolean>} True on success, false on failure.
+     */
     async updateRecords() {
       if (this.isUpdating || this.isFetching) {
         console.warn("Update skipped, another update/fetch in progress.");
@@ -531,6 +551,11 @@ Vue.createApp({
       return value;
     },
 
+    /**
+     * Validate inputs, merge into today's record, then call `updateRecords()`.
+     * Displays a temporary success notification on completion.
+     * @returns {Promise<void>}
+     */
     async addData() {
       // 1. Validate and get numeric inputs
       const foodValue = this.getNumericInput(
@@ -848,6 +873,12 @@ Vue.createApp({
     },
 
     // --- UI Helpers ---
+    /**
+     * Displays a Bootstrap alert message.
+     * @param {string} message - The message to display.
+     * @param {'success' | 'danger' | 'warning' | 'info'} type - The alert type (default: 'success').
+     * @param {number} duration - How long the alert stays visible in ms (default: 3000).
+     */
     showAlert(message, type = "success", duration = 5000) {
       // Use language strings if available
       const msg = this.curLangText?.[message] || message;
@@ -877,6 +908,11 @@ Vue.createApp({
       }, duration);
     },
 
+    /**
+     * Shows a confirmation modal and returns a promise that resolves with the user's choice.
+     * @param {string} message - The message to display in the modal body.
+     * @returns {Promise<boolean>} - Resolves true if confirmed, false otherwise.
+     */
     showConfirm(message) {
       const msg = this.curLangText?.[message] || message; // Translate message if key exists
       this.confirmMessage = msg;
