@@ -35,17 +35,19 @@
           position: fixed;
           top: 20px;
           right: 20px;
-          z-index: 10050;
+          z-index: 1056;
           min-width: 200px;
         "
       >
-        {{ bootstrapAlertMessage }}
+        <i class="fas fa-info-circle me-2"></i> {{ bootstrapAlertMessage }}
         <button
           type="button"
           class="btn-close"
           @click="bootstrapAlertMessage = ''"
+          aria-label="Close alert"
         ></button>
       </div>
+
       <template v-if="!authenticated">
         <div class="row mt-1">
           <div class="col text-center">
@@ -122,6 +124,7 @@
           </div>
         </div>
       </template>
+
       <template v-else>
         <!-- DATE and TIME -->
         <div class="time-bar">
