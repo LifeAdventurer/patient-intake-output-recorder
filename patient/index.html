@@ -571,22 +571,22 @@
           </div>
         </div>
 
-        <div class="row align-items-center mt-3">
-          <div class="col-md-3 offset-md-5 col-8 offset-2">
-            <div class="input-group">
-              <span class="input-group-text">
-                <i class="fa-solid fa-globe"></i>
-              </span>
+        <div class="row align-items-center mt-3 pb-5">
+          <div class="col-md-4 col-lg-3">
+            <div class="input-group input-group-sm">
+              <label class="input-group-text" for="main-language-select"
+                ><i class="fas fa-globe fa-fw"></i
+              ></label>
               <select
+                id="main-language-select"
                 v-model="selectedLanguage"
                 @change="changeLanguage($event.target.value)"
                 class="form-select"
-                aria-label="Language Selection"
+                :aria-label="curLangText?.language_selection || 'Language Selection'"
               >
-                <option value="" disabled>Select Language</option>
                 <option
-                  v-for="(lang, index) in supportedLanguages"
-                  :key="index"
+                  v-for="lang in supportedLanguages"
+                  :key="`main-${lang.code}`"
                   :value="lang.code"
                 >
                   {{ lang.name }}
