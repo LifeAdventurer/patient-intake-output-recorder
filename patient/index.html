@@ -153,18 +153,16 @@
       </template>
 
       <template v-else>
-        <!-- DATE and TIME -->
-        <div class="time-bar">
-          <div class="row">
-            <div class="col-md-3 col-7 fw-bold" style="font-size: 24px">
-              {{ currentDate }}
-            </div>
-            <div
-              class="col-md-2 offset-md-7 col-3 offset-1 fw-bold"
-              style="font-size: 24px"
-            >
-              {{ currentTime }}
-            </div>
+        <div
+          class="row align-items-center mb-3 bg-light py-2 rounded shadow-sm"
+        >
+          <div class="col-6 col-md-4 fw-bold fs-5 text-nowrap text-secondary">
+            <i class="fas fa-calendar-alt me-1"></i> {{ currentDate }}
+          </div>
+          <div
+            class="col-6 col-md-4 offset-md-4 text-end fw-bold fs-5 text-nowrap text-secondary"
+          >
+            <i class="fas fa-clock me-1"></i> {{ currentTime }}
           </div>
         </div>
 
