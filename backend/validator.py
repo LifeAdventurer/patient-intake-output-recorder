@@ -152,6 +152,8 @@ class PatientData(BaseModel):
                 "limitAmount should be a positive number or empty string"
             )
 
+        return self
+
 
 class UpdateDataModel(RootModel[PatientData]):
     pass
