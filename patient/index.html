@@ -606,12 +606,20 @@
             </button>
           </div>
         </div>
+
         <button
-          class="btn btn-dark position-fixed bottom-0 end-0 m-3"
+          class="btn btn-dark position-fixed bottom-0 end-0 m-3 rounded-circle shadow"
+          style="
+            width: 40px;
+            height: 40px;
+            line-height: 1;
+            padding: 0;
+            z-index: 1030;
+          "
           id="scrollToTopBtn"
           @click="scrollToTop"
           v-show="showScrollButton"
-          aria-label="Scroll to Top"
+          :title="curLangText?.scroll_to_top || 'Scroll to Top'"
         >
           <i class="fa-solid fa-arrow-up"></i>
         </button>
