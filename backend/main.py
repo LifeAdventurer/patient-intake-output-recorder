@@ -25,7 +25,6 @@ from constants import (
     FETCH_RECORD_SUCCESS,
     FETCH_UNMONITORED_PATIENTS,
     FETCH_UNMONITORED_PATIENTS_SUCCESS,
-    FRONTEND_PORT,
     INVALID_ACCT_TYPE,
     INVALID_EVENT,
     MISSING_PARAMETER,
@@ -45,7 +44,7 @@ from validator import UpdateDataModel
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", f"http://localhost:{FRONTEND_PORT}"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

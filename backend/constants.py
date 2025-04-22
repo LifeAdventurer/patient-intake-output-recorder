@@ -14,9 +14,6 @@ with open("./limits.json") as file:
         assert isinstance(value, int)
         assert int(value) > 0
 
-API_PORT = 8000
-FRONTEND_PORT = 5500
-
 # Paths
 DATA_JSON_PATH = "./data.json"  # Patient data
 ACCT_REL_JSON_PATH = "./account_relations.json"  # Monitor <-> Patients
