@@ -571,8 +571,7 @@
           </div>
         </div>
 
-        <!-- Language Selection and Logout -->
-        <div class="row mt-3">
+        <div class="row align-items-center mt-3">
           <div class="col-md-3 offset-md-5 col-8 offset-2">
             <div class="input-group">
               <span class="input-group-text">
@@ -595,14 +594,17 @@
               </select>
             </div>
           </div>
-        </div>
-        <div class="row mt-3">
-          <h4 class="col-md-3 offset-md-4 col-5 offset-1">
-            {{ curLangText.username }}: {{ account }}
-          </h4>
-          <div class="col-md-2 offset-md-0 col-4 offset-1" id="logout">
-            <button class="btn btn-dark" @click="confirmLogout">
-              {{ curLangText.logout }}
+          <div class="col-md-8 col-lg-9 text-md-end mt-2 mt-md-0">
+            <span class="me-3 text-muted"
+              ><i class="fas fa-user-circle me-1"></i> {{ curLangText?.username
+              || 'Username' }}: {{ account }}</span
+            >
+            <button
+              class="btn btn-sm btn-outline-danger"
+              @click="confirmLogout"
+            >
+              <i class="fas fa-sign-out-alt me-1"></i> {{ curLangText?.logout ||
+              'Logout' }}
             </button>
           </div>
         </div>
