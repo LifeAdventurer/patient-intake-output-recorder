@@ -264,7 +264,7 @@ Vue.createApp({
           waterSum: 0,
           urinationSum: 0,
           defecationSum: 0,
-          weight: "NaN",
+          weight: 0,
         };
       }
     },

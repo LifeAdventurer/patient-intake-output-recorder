@@ -271,7 +271,7 @@ class TestAPIEndpoints(unittest.TestCase):
                 "waterSum": 200,
                 "urinationSum": 1,
                 "defecationSum": 0,
-                "weight": "53.12 kg",
+                "weight": 53.12,
             },
         }
 
@@ -346,7 +346,7 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("Invalid record format", res.json()["message"])
         update_data[key]["foodSum"] = 100
 
-        update_data[key]["weight"] = "301 kg"
+        update_data[key]["weight"] = 301
         res = client.post(
             "/",
             json={
@@ -358,9 +358,8 @@ class TestAPIEndpoints(unittest.TestCase):
             },
         )
         self.assertIn("Invalid record format", res.json()["message"])
-        update_data[key]["weight"] = "53.12 kg"
 
-        update_data[key]["weight"] = "-123 kg"
+        update_data[key]["weight"] = -123
         res = client.post(
             "/",
             json={
@@ -372,9 +371,8 @@ class TestAPIEndpoints(unittest.TestCase):
             },
         )
         self.assertIn("Invalid record format", res.json()["message"])
-        update_data[key]["weight"] = "53.12 kg"
 
-        update_data[key]["weight"] = "??? kg"
+        update_data[key]["weight"] = "???"
         res = client.post(
             "/",
             json={
@@ -386,21 +384,7 @@ class TestAPIEndpoints(unittest.TestCase):
             },
         )
         self.assertIn("Invalid record format", res.json()["message"])
-        update_data[key]["weight"] = "53.12 kg"
-
-        update_data[key]["weight"] = "NaNN"
-        res = client.post(
-            "/",
-            json={
-                "event": UPDATE_RECORD,
-                "account": "patientX",
-                "password": "def456",
-                "patient": "patientX",
-                "data": update_data,
-            },
-        )
-        self.assertIn("Invalid record format", res.json()["message"])
-        update_data[key]["weight"] = "53.12 kg"
+        update_data[key]["weight"] = 53.12
 
         future_time = (datetime.now().replace(hour=23, minute=59)).strftime(
             "%H:%M"

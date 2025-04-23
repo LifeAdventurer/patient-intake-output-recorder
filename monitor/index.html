@@ -385,8 +385,8 @@
                                         title="當日體重"
                                       >
                                         <i class="fas fa-weight-scale me-1"></i>
-                                        {{ dailyRecord.weight === 'NaN' ?
-                                        '未測量' : dailyRecord.weight }}
+                                        {{ dailyRecord.weight === 0 ? '未測量' :
+                                        `${dailyRecord.weight} kg` }}
                                       </span>
                                       <span class="fw-bold">
                                         {{ dailyRecord.count ?? 0 }}筆紀錄
