@@ -175,220 +175,193 @@
           {{ restrictionText }}
         </div>
 
-        <div
-          class="row justify-content-around row-cols-2 row-cols-lg-4 g-2 mb-2"
-        >
+        <div class="row row-cols-2 row-cols-lg-4 g-2 mb-2">
           <div class="col">
-            <div class="card shadow h-100 py-2 bg-light">
-              <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                  <div class="col-8">
-                    <h3>{{ curLangText.food_intake }}</h3>
-                  </div>
-                  <div class="col-4">
-                    <i class="fa-solid fa-utensils" style="font-size: 24px"></i>
-                  </div>
+            <div class="card shadow-sm h-100">
+              <div class="card-body d-flex flex-column py-2">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <h5 class="card-title mb-0">
+                    <i class="fas fa-utensils me-2 text-primary"></i>{{
+                    curLangText?.food_intake || 'Food Intake' }}
+                  </h5>
+                  <span class="badge bg-light text-dark"
+                    >{{ curLangText?.unit_g || '(g)' }}</span
+                  >
                 </div>
 
-                <div class="row">
-                  <!-- dropdown -->
-                  <div class="col">
-                    <select
-                      class="form-select"
-                      aria-label="Food Intake Selection"
-                      v-model="inputFood"
-                    >
-                      <option value="" disabled>
-                        {{ curLangText.unit }}(g)
-                      </option>
-                      <option selected value="0">0</option>
-                      <option
-                        v-for="option in options"
-                        :key="option.value"
-                        :value="option.value"
-                      >
-                        {{ option.label }}
-                      </option>
-                      <option value="custom">{{ curLangText.custom }}</option>
-                      <input
-                        v-show="inputFood === 'custom'"
-                        class="form-control"
-                        v-model="customInputFood"
-                        type="number"
-                        :placeholder="`${curLangText.unit}(g)`"
-                        aria-label="Custom Food Intake"
-                      />
-                    </select>
-                  </div>
-                </div>
+                <select
+                  class="form-select form-select-lg mb-2"
+                  :aria-label="curLangText?.food_intake_selection || 'Food Intake Selection'"
+                  v-model="inputFood"
+                >
+                  <option selected value="0">0</option>
+                  <option
+                    v-for="option in options"
+                    :key="`food-${option.value}`"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                  <option value="custom">
+                    {{ curLangText?.custom || 'Custom' }}
+                  </option>
+                </select>
+                <input
+                  v-show="inputFood === 'custom'"
+                  class="form-control form-control-lg mt-1"
+                  v-model.number="customInputFood"
+                  type="number"
+                  min="0"
+                  step="any"
+                  :placeholder="curLangText?.enter_custom_value || 'Enter custom value'"
+                  :aria-label="curLangText?.custom_food_intake || 'Custom Food Intake'"
+                />
               </div>
             </div>
           </div>
-          <!-- water -->
           <div class="col">
-            <div class="card shadow h-100 py-2 bg-light">
-              <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                  <div class="col-8">
-                    <h3>{{ curLangText.water_consumption }}</h3>
-                  </div>
-                  <div class="col-4">
-                    <i
-                      class="fa-solid fa-glass-water"
-                      style="font-size: 24px"
-                    ></i>
-                  </div>
+            <div class="card shadow-sm h-100">
+              <div class="card-body d-flex flex-column py-2">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <h5 class="card-title mb-0">
+                    <i class="fas fa-glass-water me-2 text-info"></i>{{
+                    curLangText?.water_consumption || 'Water' }}
+                  </h5>
+                  <span class="badge bg-light text-dark"
+                    >{{ curLangText?.unit_ml || '(ml)' }}</span
+                  >
                 </div>
-
-                <div class="row">
-                  <!-- dropdown -->
-                  <div class="col">
-                    <select
-                      class="form-select"
-                      aria-label="Water Consumption Selection"
-                      v-model="inputWater"
-                    >
-                      <option value="" disabled>
-                        {{ curLangText.unit }}(ml)
-                      </option>
-                      <option selected value="0">0</option>
-                      <option
-                        v-for="option in options"
-                        :key="option.value"
-                        :value="option.value"
-                      >
-                        {{ option.label }}
-                      </option>
-                      <option value="custom">{{ curLangText.custom }}</option>
-                      <input
-                        v-show="inputWater === 'custom'"
-                        class="form-control"
-                        v-model="customInputWater"
-                        type="number"
-                        :placeholder="`${curLangText.unit}(ml)`"
-                        aria-label="Custom Water Intake"
-                      />
-                    </select>
-                  </div>
-                </div>
+                <select
+                  class="form-select form-select-lg mb-2"
+                  :aria-label="curLangText?.water_consumption_selection || 'Water Consumption Selection'"
+                  v-model="inputWater"
+                >
+                  <option selected value="0">0</option>
+                  <option
+                    v-for="option in options"
+                    :key="`water-${option.value}`"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                  <option value="custom">
+                    {{ curLangText?.custom || 'Custom' }}
+                  </option>
+                </select>
+                <input
+                  v-show="inputWater === 'custom'"
+                  class="form-control form-control-lg mt-1"
+                  v-model.number="customInputWater"
+                  type="number"
+                  min="0"
+                  step="any"
+                  :placeholder="curLangText?.enter_custom_value || 'Enter custom value'"
+                  :aria-label="curLangText?.custom_water_intake || 'Custom Water Intake'"
+                />
               </div>
             </div>
           </div>
-          <!-- urination -->
           <div class="col">
-            <div class="card shadow h-100 py-2 bg-light">
-              <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                  <div class="col-8">
-                    <h3>{{ curLangText.urination }}</h3>
-                  </div>
-                  <div class="col-4">
-                    <i class="fa-solid fa-toilet" style="font-size: 24px"></i>
-                  </div>
+            <div class="card shadow h-100">
+              <div class="card-body d-flex flex-column py-2">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <h5 class="card-title mb-0">
+                    <i class="fas fa-toilet me-2 text-warning"></i>{{
+                    curLangText?.urination || 'Urination' }}
+                  </h5>
+                  <span class="badge bg-light text-dark"
+                    >{{ curLangText?.unit_ml || '(ml)' }}</span
+                  >
                 </div>
-
-                <div class="row">
-                  <!-- dropdown -->
-                  <div class="col">
-                    <select
-                      class="form-select"
-                      aria-label="Urination Amount Selection"
-                      v-model="inputUrination"
-                    >
-                      <option value="" disabled>
-                        {{ curLangText.unit }}(ml)
-                      </option>
-                      <option selected value="0">0</option>
-                      <option
-                        v-for="option in options"
-                        :key="option.value"
-                        :value="option.value"
-                      >
-                        {{ option.label }}
-                      </option>
-                      <option value="custom">{{ curLangText.custom }}</option>
-                      <input
-                        v-show="inputUrination === 'custom'"
-                        class="form-control"
-                        v-model="customInputUrination"
-                        type="number"
-                        :placeholder="`${curLangText.unit}(ml)`"
-                        aria-label="Custom Urination Amount"
-                      />
-                    </select>
-                  </div>
-                </div>
+                <select
+                  class="form-select form-select-lg mb-2"
+                  :aria-label="curLangText?.urination_amount_selection || 'Urination Amount Selection'"
+                  v-model="inputUrination"
+                >
+                  <option selected value="0">0</option>
+                  <option
+                    v-for="option in options"
+                    :key="`urine-${option.value}`"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                  <option value="custom">
+                    {{ curLangText?.custom || 'Custom' }}
+                  </option>
+                </select>
+                <input
+                  v-show="inputUrination === 'custom'"
+                  class="form-control form-control-lg mt-1"
+                  v-model.number="customInputUrination"
+                  type="number"
+                  min="0"
+                  step="any"
+                  :placeholder="curLangText?.enter_custom_value || 'Enter custom value'"
+                  :aria-label="curLangText?.custom_urination_amount || 'Custom Urination Amount'"
+                />
               </div>
             </div>
           </div>
-          <!-- defecation -->
           <div class="col">
-            <div class="card shadow h-100 py-2 bg-light">
-              <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                  <div class="col-8">
-                    <h3>{{ curLangText.defecation }}</h3>
-                  </div>
-                  <div class="col-4">
-                    <i class="fa-solid fa-restroom" style="font-size: 24px">
-                    </i>
-                  </div>
+            <div class="card shadow h-100">
+              <div class="card-body d-flex flex-column py-2">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <h5 class="card-title mb-0">
+                    <i class="fas fa-poop me-2 text-secondary"></i>{{
+                    curLangText?.defecation || 'Defecation' }}
+                  </h5>
+                  <span class="badge bg-light text-dark"
+                    >{{ curLangText?.times || '(times)' }}</span
+                  >
                 </div>
-
-                <div class="row checkbox-row">
-                  <!-- dropdown -->
-                  <div class="col">
-                    <select
-                      class="form-select"
-                      aria-label="Defecation Frequency Selection"
-                      v-model="inputDefecation"
-                    >
-                      <option value="" disabled>
-                        {{ curLangText.unit }}({{ curLangText.times }})
-                      </option>
-                      <option selected value="0">0</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                      <option value="4">4</option>
-                      <option value="5">5</option>
-                    </select>
-                  </div>
-                </div>
+                <select
+                  class="form-select form-select-lg mb-2"
+                  :aria-label="curLangText?.defecation_frequency_selection || 'Defecation Frequency Selection'"
+                  v-model.number="inputDefecation"
+                >
+                  <option selected value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
               </div>
             </div>
           </div>
         </div>
-        <!-- weight -->
-        <div class="row mb-2">
+        <div class="row mb-3">
           <div class="col">
-            <div class="card shadow h-60 py-2 bg-light">
-              <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                  <div class="col-4">
-                    <h3>{{ curLangText.weight }}</h3>
-                  </div>
-                  <div class="col-2">
-                    <i
-                      class="fa-solid fa-weight-scale"
-                      style="font-size: 30px"
-                    ></i>
-                  </div>
-                  <div class="col-6">
-                    <div class="col">
-                      <div class="form-floating">
-                        <input
-                          type="number"
-                          class="form-control"
-                          id="inputWeight"
-                          v-model="inputWeight"
-                        />
-                        <label for="inputWeight"
-                          >{{ curLangText.unit }}(kg)</label
-                        >
-                      </div>
-                    </div>
-                  </div>
+            <div class="card shadow-sm">
+              <div class="card-body py-2">
+                <div class="input-group align-items-center">
+                  <span class="input-group-text"
+                    ><i class="fas fa-weight-scale fa-fw me-1"></i> {{
+                    curLangText?.weight || 'Weight' }}</span
+                  >
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="inputWeight"
+                    v-model.number="inputWeight"
+                    min="0.1"
+                    max="300"
+                    step="0.1"
+                    :placeholder="curLangText?.enter_weight_placeholder || 'Enter if measured (kg)'"
+                    :aria-label="curLangText?.weight_input_kg || 'Weight input (kg)'"
+                  />
+                  <span class="input-group-text"
+                    >{{ curLangText?.unit_kg || 'kg' }}</span
+                  >
                 </div>
               </div>
             </div>
