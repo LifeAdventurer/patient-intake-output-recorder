@@ -485,107 +485,121 @@
           </div>
         </div>
 
-        <!-- Records -->
-        <div class="row">
+        <div class="row mb-4">
           <div class="col">
-            <!-- dailyRecord = record[currentDate] = curRecord  -->
-            <div v-for="(dailyRecord, index) in reversedRecord">
-              <div class="accordion">
-                <div class="accordion-item shadow bg-light">
-                  <h2 class="accordion-header" id="recordSection">
+            <h5 class="mb-2">
+              <i class="fas fa-history me-1 text-secondary"></i> {{
+              curLangText?.all_records || 'All Records' }}
+            </h5>
+            <div class="accordion" id="allRecordsAccordion">
+              <template v-if="Object.keys(reversedRecord).length > 0">
+                <div
+                  class="accordion-item shadow bg-light"
+                  v-for="(dailyRecord, dateKey) in reversedRecord"
+                  :key="dateKey"
+                >
+                  <h2 class="accordion-header" id="`header-${dateKey}`">
                     <button
                       class="accordion-button collapsed"
                       type="button"
                       data-bs-toggle="collapse"
-                      :data-bs-target="`#content_${index}`"
+                      :data-bs-target="`#collapse-${dateKey}`"
                       aria-expanded="false"
-                      :aria-controls="`content_${index}`"
+                      :aria-controls="`collapse-${dateKey}`"
                     >
-                      <div class="row">
-                        <div
-                          class="col-2"
-                          style="font-size: 20px; margin-left: -10px"
+                      <div
+                        class="d-flex w-100 justify-content-between align-items-center small"
+                      >
+                        <span class="fw-bold me-1">
+                          {{ dailyRecord.recordDate }}</span
                         >
-                          <div class="recordDate">
-                            <b>{{ dailyRecord["recordDate"] }}</b>
-                          </div>
-                        </div>
-                        <div
-                          class="col-6"
-                          style="font-size: 18px; margin-left: 6px"
+                        <span class="me-2" title="當日體重">
+                          <i class="fas fa-weight-scale me-1"></i>
+                          {{ dailyRecord.weight !== "NaN" ? dailyRecord.weight :
+                          (curLangText?.not_measured || 'N/A') }}
+                        </span>
+                        <span class="fw-bold me-2"
+                          >{{ dailyRecord.count ?? 0 }} {{
+                          curLangText?.record_count_unit || 'records' }}</span
                         >
-                          <div class="weight">
-                            {{ curLangText.weight }}:
-                            <b
-                              >{{ dailyRecord["weight"] == 'NaN' ?
-                              curLangText.not_measured : dailyRecord["weight"]
-                              }}</b
-                            >
-                          </div>
-                        </div>
-                        <div
-                          class="col-4"
-                          style="white-space: nowrap; font-size: 18px"
-                        >
-                          <div class="count">
-                            <b>{{ dailyRecord["count"] }}</b> {{
-                            curLangText.record_count }}
-                          </div>
-                        </div>
                       </div>
                     </button>
                   </h2>
                   <div
+                    :id="`collapse-${dateKey}`"
                     class="accordion-collapse collapse"
-                    :id="`content_${index}`"
-                    aria-labelledby="recordSection"
-                    data-bs-parent="#accordionExample"
+                    :aria-labelledby="`header-${dateKey}`"
+                    data-bs-parent="#allRecordsAccordion"
                   >
-                    <div class="accordion-body">
+                    <div class="accordion-body p-2">
                       <div class="table-responsive">
                         <table
-                          class="table table-hover table-bordered"
-                          style="font-size: 18px"
+                          class="table table-hover table-bordered mb-0 small"
                         >
-                          <thead class="table-secondary">
+                          <thead class="table-light">
                             <tr class="text-center">
-                              <th scope="col">{{ curLangText.timestamp }}</th>
-                              <th scope="col">{{ curLangText.food_intake }}</th>
-                              <th scope="col">
-                                {{ curLangText.water_consumption }}
+                              <th>{{ curLangText?.timestamp || 'Time' }}</th>
+                              <th>
+                                <i
+                                  class="fas fa-utensils"
+                                  title="`{{ curLangText?.food_intake || 'Food' }}`g"
+                                ></i>
                               </th>
-                              <th scope="col">{{ curLangText.urination }}</th>
-                              <th scope="col">{{ curLangText.defecation }}</th>
-                              <th scope="col"></th>
+                              <th>
+                                <i
+                                  class="fas fa-glass-water"
+                                  title="`{{ curLangText?.water_consumption || 'Water' }}`ml"
+                                ></i>
+                              </th>
+                              <th>
+                                <i
+                                  class="fas fa-toilet"
+                                  title="`{{ curLangText?.urination || 'Urine' }}ml`"
+                                ></i>
+                              </th>
+                              <th>
+                                <i
+                                  class="fas fa-poop"
+                                  title="`{{ curLangText?.defecation || 'Stool' }}`"
+                                ></i>
+                              </th>
+                              <th></th>
+                              <!--- Actions --->
                             </tr>
                           </thead>
-                          <tbody class="table-group-divider">
+                          <tbody>
                             <tr
-                              v-for="(data, index2) in dailyRecord['data']"
-                              :key="index2"
+                              v-for="(recordData, recordIndex) in dailyRecord.data"
+                              :key="recordIndex"
                             >
-                              <td v-for="content in data" class="text-center">
+                              <td
+                                v-for="content in recordData"
+                                class="text-center align-middle"
+                              >
                                 {{ content }}
                               </td>
-                              <td
-                                class="justify-content-center align-items-center"
-                                style="text-align: center"
-                              >
-                                <i
+                              <td class="text-center align-middle">
+                                <button
+                                  class="btn btn-sm btn-link text-danger p-0"
                                   @click="removeRecord($event.target)"
-                                  :id="`${index}-${index2}`"
-                                  class="fa-solid"
-                                  :class="removingRecord ? 'fa-hourglass-half' : 'fa-trash-can'"
+                                  :disabled="removingRecord"
+                                  :title="curLangText?.remove_this_record || 'Remove this record'"
+                                  :aria-label="curLangText?.remove_this_record || 'Remove this record'"
                                 >
-                                </i>
+                                  <i
+                                    class="fas fa-fw"
+                                    :class="removingRecord ? 'fa-spinner fa-spin' : 'fa-trash-can'"
+                                    :id="`${dateKey}-${recordIndex}`"
+                                  ></i>
+                                </button>
                               </td>
                             </tr>
                             <tr class="table-light text-center fw-bold">
-                              <td>{{ curLangText.sum }}</td>
-                              <td>{{ dailyRecord["foodSum"] }}</td>
-                              <td>{{ dailyRecord["waterSum"] }}</td>
-                              <td>{{ dailyRecord["urinationSum"] }}</td>
-                              <td>{{ dailyRecord["defecationSum"] }}</td>
+                              <td>{{ curLangText?.sum || 'Total' }}</td>
+                              <td>{{ dailyRecord.foodSum ?? 0 }}</td>
+                              <td>{{ dailyRecord.waterSum ?? 0 }}</td>
+                              <td>{{ dailyRecord.urinationSum ?? 0 }}</td>
+                              <td>{{ dailyRecord.defecationSum ?? 0 }}</td>
                               <td></td>
                             </tr>
                           </tbody>
@@ -594,7 +608,7 @@
                     </div>
                   </div>
                 </div>
-              </div>
+              </template>
             </div>
           </div>
         </div>
