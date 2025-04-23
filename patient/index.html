@@ -437,42 +437,52 @@
           </div>
         </div>
 
-        <div class="row">
-          <template v-if="records[currentDateYY_MM_DD]">
-            <div class="table-responsive">
-              <table class="table table-bordered">
-                <thead class="table-secondary">
-                  <tr class="text-center">
-                    <th scope="col">
-                      {{ records[currentDateYY_MM_DD]['recordDate'] }}
-                    </th>
-                    <th scope="col">{{ curLangText.food_intake }}</th>
-                    <th scope="col">{{ curLangText.water_consumption }}</th>
-                    <th scope="col">{{ curLangText.urination }}</th>
-                    <th scope="col">{{ curLangText.defecation }}</th>
-                  </tr>
-                </thead>
-                <tbody class="table-group-divider">
-                  <tr class="text-center fw-bold">
-                    <td>{{ curLangText.sum }}</td>
-                    <td :style="{ color: getFoodSumColor() }">
-                      {{ records[currentDateYY_MM_DD]['foodSum'] }}
-                    </td>
-                    <td :style="{ color: getWaterSumColor() }">
-                      {{ records[currentDateYY_MM_DD]['waterSum'] }}
-                    </td>
-                    <td>{{ records[currentDateYY_MM_DD]['urinationSum'] }}</td>
-                    <td>{{ records[currentDateYY_MM_DD]['defecationSum'] }}</td>
-                  </tr>
-                </tbody>
-              </table>
+        <div class="row mb-3">
+          <h5 class="mb-2">
+            <i class="fas fa-clipboard-list me-1 text-info"></i> {{
+            curLangText?.today_summary || "Today's Summary" }}
+          </h5>
+          <div
+            v-if="records[currentDateYY_MM_DD]"
+            class="border rounded p-2 bg-light"
+          >
+            <div class="row gx-2 text-center small">
+              <div class="col" :title="curLangText?.food_intake">
+                <span
+                  :class="getFoodSumColor() === 'red' ? 'text-danger fw-bold' : ''"
+                >
+                  <i class="fas fa-utensils"></i>
+                  {{ records[currentDateYY_MM_DD].foodSum ?? 0 }}g</span
+                >
+              </div>
+              <div
+                class="col border-start"
+                :title="curLangText?.water_consumption"
+              >
+                <span
+                  :class="getWaterSumColor() === 'red' ? 'text-danger fw-bold' : ''"
+                >
+                  <i class="fas fa-glass-water me-1"></i>{{
+                  records[currentDateYY_MM_DD].waterSum ?? 0 }}ml</span
+                >
+              </div>
+              <div class="col border-start" :title="curLangText?.urination">
+                <i class="fas fa-toilet me-1"></i>
+                {{ records[currentDateYY_MM_DD].urinationSum ?? 0 }}ml
+              </div>
+              <div class="col border-start" :title="curLangText?.defecation">
+                <i class="fas fa-poop me-1"></i>
+                {{ records[currentDateYY_MM_DD].defecationSum ?? 0 }}{{
+                curLangText.times }}
+              </div>
             </div>
-          </template>
-          <template v-else>
-            <h4 class="text-center">
-              {{ curLangText.no_records_yet_for_today }}
-            </h4>
-          </template>
+          </div>
+
+          <div v-else class="alert alert-light text-center text-muted small">
+            {{ curLangText?.no_records_yet_for_today || "No records yet for " +
+            "today." }}
+            <!--- Prevent Vue SyntaxError --->
+          </div>
         </div>
 
         <!-- Records -->
