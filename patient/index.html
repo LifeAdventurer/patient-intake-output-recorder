@@ -500,7 +500,7 @@
                 >
                   <h2 class="accordion-header" id="`header-${dateKey}`">
                     <button
-                      class="accordion-button collapsed"
+                      class="accordion-button collapsed py-2"
                       type="button"
                       data-bs-toggle="collapse"
                       :data-bs-target="`#collapse-${dateKey}`"
@@ -609,11 +609,17 @@
                   </div>
                 </div>
               </template>
+              <template v-else>
+                <div class="text-center p-3 text-muted small">
+                  {{ curLangText?.no_historical_records || '(No historical' +
+                  'records found)' }}
+                </div>
+              </template>
             </div>
           </div>
         </div>
 
-        <div class="row align-items-center mt-3 pb-5">
+        <div class="row align-items-center mb-5 pb-5">
           <div class="col-md-4 col-lg-3">
             <div class="input-group input-group-sm">
               <label class="input-group-text" for="main-language-select"
