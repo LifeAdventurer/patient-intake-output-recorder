@@ -1002,10 +1002,6 @@ Vue.createApp({
         clearInterval(this.backgroundSyncIntervalId);
         this.backgroundSyncIntervalId = null;
       }
-      document.removeEventListener(
-        "visibilitychange",
-        this.handleVisibilityChange,
-      );
     },
 
     handleVisibilityChange() {
