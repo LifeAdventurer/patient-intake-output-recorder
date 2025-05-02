@@ -166,8 +166,7 @@ Vue.createApp({
   beforeUnmount() {
     // Clean up intervals and event listeners
     if (this.dateTimeIntervalId) clearInterval(this.dateTimeIntervalId);
-    this.stopBackgroundSync(); // Handles interval clearing and listener removal
-    globalThis.removeEventListener("scroll", this.handleScroll);
+    this.teardownBackgroundSync();
   },
 
   // --- Methods ---
@@ -511,7 +510,7 @@ Vue.createApp({
       this.records = {};
       sessionStorage.removeItem("account");
       sessionStorage.removeItem("password");
-      this.stopBackgroundSync(); // Stop sync if logged out due to error
+      this.stopBackgroundSyncInterval(); // Stop sync if logged out due to error
     },
 
     togglePasswordVisibility() {
@@ -996,7 +995,7 @@ Vue.createApp({
       }
     },
 
-    stopBackgroundSync() {
+    stopBackgroundSyncInterval() {
       if (this.backgroundSyncIntervalId !== null) {
         console.log("Stopping background sync interval.");
         clearInterval(this.backgroundSyncIntervalId);
@@ -1009,11 +1008,19 @@ Vue.createApp({
 
       if (document.hidden) {
         console.log("Page hidden, stopping background sync.");
-        this.stopBackgroundSync(); // Clear interval when tab is hidden
+        this.stopBackgroundSyncInterval(); // Clear interval when tab is hidden
       } else {
         console.log("Page visible, starting background sync.");
         this.startBackgroundSyncInterval(); // Start interval (will fetch once immediately)
       }
+    },
+
+    teardownBackgroundSync() {
+      this.stopBackgroundSyncInterval();
+      document.removeEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange,
+      );
     },
   }, // End Methods
 }).mount("#app");
