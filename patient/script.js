@@ -28,7 +28,8 @@ Vue.createApp({
       bootstrapAlertClass: "alert-danger", // Default class
       confirmMessage: "",
       confirmResolver: null, // For Bootstrap confirm modal promise
-      isLoading: false, // Generic loading state for API calls
+      isInitialLoading: false, // Initial page-load state
+      isPosting: false, // Generic state for API calls
       isUpdating: false, // Specific flag for updateRecords call
       isFetching: false, // Specific flag for fetchRecords call
       confirming: false, // Flag to prevent sync/actions during confirmation modal
@@ -127,7 +128,7 @@ Vue.createApp({
 
   // --- Lifecycle Hooks ---
   async created() {
-    this.isLoading = true;
+    this.isInitialLoading = true;
     // Load essential configs first
     await this.fetchConfig(); // Loads apiUrl, API events and messages
     await this.loadLanguageData(); // Loads supported languages and texts
@@ -149,7 +150,7 @@ Vue.createApp({
       this.password = passwordToUse;
       await this.authenticate(); // This fetches initial records if successful
     }
-    this.isLoading = false;
+    this.isInitialLoading = false;
   },
 
   mounted() {
@@ -358,7 +359,7 @@ Vue.createApp({
         return; // Don't fetch if already fetching, updating, or confirming
       }
       console.log("Fetching records...");
-      this.isFetching = true;
+      this.isPosting = true;
       try {
         const payload = {
           event: this.events.FETCH_RECORD,
@@ -387,7 +388,7 @@ Vue.createApp({
         // Alert is shown by postRequest
         return { message: error.message }; // Return error structure for authenticate
       } finally {
-        this.isFetching = false;
+        this.isPosting = false;
       }
     },
 
