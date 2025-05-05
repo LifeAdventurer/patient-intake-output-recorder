@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from datetime import time as time_cls
 from typing import Any
 
@@ -10,6 +10,9 @@ from pydantic import (
     RootModel,
     model_validator,
 )
+
+BUFFER_DAYS = 1
+BUFFER_MINUTES = 24 * 60  # 1 day buffer in minutes
 
 
 def parse_date_key(key: str) -> date:
@@ -73,8 +76,10 @@ class DailyRecord(BaseModel):
                 )
 
         record_date = parse_record_date(self.recordDate)
-        if record_date > date.today():
-            raise ValueError(f"recordDate is in the future: {self.recordDate}")
+        if record_date > date.today() + timedelta(days=BUFFER_DAYS):
+            raise ValueError(
+                f"recordDate is too far in the future: {self.recordDate}"
+            )
 
         if self.weight != 0:
             if self.weight <= 0:
@@ -85,14 +90,6 @@ class DailyRecord(BaseModel):
                 raise ValueError(
                     f"weight {self.weight} exceeds max limit {max_weight}"
                 )
-
-        for record in self.data:
-            if record_date < date.today():
-                continue
-            input_time = parse_time(record.time)
-            now = datetime.now().time()
-            if input_time > now:
-                raise ValueError(f"time {input_time} is in the future")
 
         return self
 
@@ -127,8 +124,8 @@ class PatientData(BaseModel):
     def check_key_and_record_date(self):
         for key, record in self.records.items():
             key_date = parse_date_key(key)
-            if key_date > date.today():
-                raise ValueError(f"record key {key} is in the future")
+            if key_date > date.today() + timedelta(days=BUFFER_DAYS):
+                raise ValueError(f"record key {key} is too far in the future")
             record_date = parse_record_date(record.recordDate)
             if (
                 key_date.month != record_date.month
