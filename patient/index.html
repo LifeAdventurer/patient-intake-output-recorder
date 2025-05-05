@@ -386,16 +386,15 @@
               {{ isUpdating ? (curLangText?.saving || 'Saving...') :
               (curLangText?.create_new_record || 'Add Record') }}
             </button>
-            <transition name="fade">
+          </div>
+        </div>
+
+        <transition name="fade">
+          <div v-if="showNotification" class="row mb-3">
+            <div class="col">
               <div
-                v-if="showNotification"
-                class="alert alert-success alert-dismissible d-inline-flex align-items-center fade show ms-3 p-2"
+                class="alert alert-success alert-dismissible d-flex justify-content-center align-items-center"
                 role="alert"
-                style="
-                  position: absolute;
-                  top: 50%;
-                  transform: translateY(-50%);
-                "
               >
                 <i class="fas fa-check-circle me-2"></i>
                 {{ curLangText?.data_added_successfully || 'Record Saved!' }}
@@ -406,9 +405,9 @@
                   aria-label="Close"
                 ></button>
               </div>
-            </transition>
+            </div>
           </div>
-        </div>
+        </transition>
 
         <div class="row mb-3">
           <h5 class="mb-2">
