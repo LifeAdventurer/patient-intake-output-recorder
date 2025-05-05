@@ -734,21 +734,21 @@ Vue.createApp({
         const parts = [];
         if (foodChecked && waterChecked) {
           parts.push(
-            this.curLangText.limit_food_and_water_to_no_more_than ||
+            this.curLangText?.limit_food_and_water_to_no_more_than ||
               "Limit Food+Water <",
           );
         } else if (foodChecked) {
           parts.push(
-            this.curLangText.limit_food_to_no_more_than || "Limit Food <",
+            this.curLangText?.limit_food_to_no_more_than || "Limit Food <",
           );
         } else {
           // Only water checked
           parts.push(
-            this.curLangText.limit_water_to_no_more_than || "Limit Water <",
+            this.curLangText?.limit_water_to_no_more_than || "Limit Water <",
           );
         }
         parts.push(limitAmount);
-        parts.push(this.curLangText.grams || "g/ml"); // Use a generic unit
+        parts.push(this.curLangText?.grams || "g/ml"); // Use a generic unit
         text = parts.join(" "); // Add spaces between parts
       } else {
         // Leave text as empty string, so the alert will not display

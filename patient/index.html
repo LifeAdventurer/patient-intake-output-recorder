@@ -320,7 +320,7 @@
                     curLangText?.defecation || 'Defecation' }}
                   </h5>
                   <span class="badge bg-light text-dark"
-                    >{{ curLangText?.times || '(times)' }}</span
+                    >{{ curLangText?.unit_times || '(times)' }}</span
                   >
                 </div>
                 <select
@@ -425,7 +425,7 @@
                   :class="getFoodSumColor() === 'red' ? 'text-danger fw-bold' : ''"
                 >
                   <i class="fas fa-utensils"></i>
-                  {{ records[currentDateYY_MM_DD].foodSum ?? 0 }}g</span
+                  {{ records[currentDateYY_MM_DD].foodSum ?? 0 }}(g)</span
                 >
               </div>
               <div
@@ -436,17 +436,17 @@
                   :class="getWaterSumColor() === 'red' ? 'text-danger fw-bold' : ''"
                 >
                   <i class="fas fa-glass-water me-1"></i>{{
-                  records[currentDateYY_MM_DD].waterSum ?? 0 }}ml</span
+                  records[currentDateYY_MM_DD].waterSum ?? 0 }}(ml)</span
                 >
               </div>
               <div class="col border-start" :title="curLangText?.urination">
                 <i class="fas fa-toilet me-1"></i>
-                {{ records[currentDateYY_MM_DD].urinationSum ?? 0 }}ml
+                {{ records[currentDateYY_MM_DD].urinationSum ?? 0 }}(ml)
               </div>
               <div class="col border-start" :title="curLangText?.defecation">
                 <i class="fas fa-poop me-1"></i>
                 {{ records[currentDateYY_MM_DD].defecationSum ?? 0 }}{{
-                curLangText.times }}
+                curLangText?.unit_times || "(times)" }}
               </div>
             </div>
           </div>
