@@ -194,7 +194,8 @@ Vue.createApp({
       } catch (error) {
         console.error("Failed to load config.json or events.json:", error);
         this.showAlert(
-          this.curLangText?.config_load_error || "Failed to load config.",
+          this.curLangText?.config_load_error ||
+            "Failed to load configuration.",
           "danger",
         );
       }
@@ -829,7 +830,7 @@ Vue.createApp({
       this.confirming = true;
       const confirmed = await this.showConfirm(
         this.curLangText?.confirm_remove_record ||
-          "Confirm remove this record?",
+          "Confirm remove this record? This action cannot be undone.",
       );
       this.confirming = false;
       if (!confirmed) {
