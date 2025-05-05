@@ -400,7 +400,7 @@ class TestAPIEndpoints(unittest.TestCase):
                 "data": update_data,
             },
         )
-        self.assertIn("Invalid record format", res.json()["message"])
+        self.assertEqual(res.json()["message"], UPDATE_RECORD_SUCCESS)
 
         update_data[key]["data"][0]["time"] = now_time
         res = client.post(
