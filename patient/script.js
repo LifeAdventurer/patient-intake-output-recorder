@@ -36,7 +36,7 @@ Vue.createApp({
       removingRecord: false, // Flag during record removal confirmation/API call
 
       // --- i18n State ---
-      selectedLanguage: "zh-TW", // Default language
+      selectedLanguage: "en", // Default language
       supportedLanguages: [], // Loaded from supported_languages.json
       curLangTexts: {}, // Loaded from lang_texts.json
 

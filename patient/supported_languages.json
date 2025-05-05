@@ -1,5 +1,9 @@
 [
   {
+    "code": "en",
+    "name": "English"
+  },
+  {
     "code": "zh-TW",
     "name": "繁體中文"
   },
@@ -14,9 +18,5 @@
   {
     "code": "id",
     "name": "Bahasa Indonesia"
-  },
-  {
-    "code": "en",
-    "name": "English"
   }
 ]
