@@ -10,4 +10,4 @@ docs/note.md
 
 site/
 
-*.diff
+tmp/
