@@ -1,6 +1,6 @@
+import datetime
 import os
 import unittest
-from datetime import date, datetime
 from unittest.mock import patch
 
 import db
@@ -13,6 +13,7 @@ from constants import (
     AUTH_SUCCESS,
     CHANGE_PASSWORD,
     CHANGE_USERNAME,
+    DELETE_DAILY_RECORD,
     DELETE_MONITOR,
     DELETE_MONITOR_SUCCESS,
     DELETE_PATIENT,
@@ -24,10 +25,20 @@ from constants import (
     FETCH_UNMONITORED_PATIENTS,
     FETCH_UNMONITORED_PATIENTS_SUCCESS,
     INVALID_EVENT,
+    NEW_DAILY_RECORD,
+    RECORD_DATA_CREATE_SUCCESS,
+    RECORD_DATA_DELETE_SUCCESS,
+    RECORD_DATA_UPDATE_SUCCESS,
     REMOVE_PATIENT,
     REMOVE_PATIENT_SUCCESS,
+    SET_LIMITS_SUCCESS,
     SIGN_UP_MONITOR,
     SIGN_UP_PATIENT,
+    TRANSFER_PATIENT,
+    TRANSFER_PATIENT_NOT_EMPTY,
+    TRANSFER_PATIENT_SUCCESS,
+    UPDATE_DAILY_RECORD,
+    UPDATE_LIMIT,
     UPDATE_RECORD,
     UPDATE_RECORD_SUCCESS,
 )
@@ -40,6 +51,14 @@ TEST_DB = "test_accounts.db"
 TEST_DATA_JSON = "test_data.json"
 TEST_ACCT_REL_JSON = "test_account_relations.json"
 TEST_TOKEN = "testtoken123"
+
+
+def make_today_key():
+    today = datetime.date.today()
+    return (
+        f"{today.year}_{today.month}_{today.day}",
+        f"{today.month}/{today.day}",
+    )
 
 
 def mocked_load_json_file(path):
@@ -246,10 +265,10 @@ class TestAPIEndpoints(unittest.TestCase):
 
         db.add_account("patientX", "def456", db.AccountType.PATIENT)
 
-        today = date.today()
+        today = datetime.date.today()
         key = f"{today.year}_{today.month}_{today.day}"
         display_date = f"{today.month}/{today.day}"
-        now_time = datetime.now().strftime("%H:%M")
+        now_time = datetime.datetime.now().strftime("%H:%M")
         valid_data = {
             "time": now_time,
             "food": 100,
@@ -386,9 +405,9 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("Invalid record format", res.json()["message"])
         update_data[key]["weight"] = 53.12
 
-        future_time = (datetime.now().replace(hour=23, minute=59)).strftime(
-            "%H:%M"
-        )
+        future_time = (
+            datetime.datetime.now().replace(hour=23, minute=59)
+        ).strftime("%H:%M")
         update_data[key]["data"][0]["time"] = future_time
         res = client.post(
             "/",
@@ -444,6 +463,284 @@ class TestAPIEndpoints(unittest.TestCase):
     def test_invalid_event_without_token(self, _):
         res = client.post("/", json={"event": "does_not_exist"})
         self.assertEqual(res.json()["message"], INVALID_EVENT)
+
+    @patch("main.write_json_file", side_effect=mocked_write_json_file)
+    @patch("main.load_json_file", side_effect=mocked_load_json_file)
+    def test_record_crud(self, *_):
+        db.add_account("patient1", "abc123", db.AccountType.PATIENT)
+        db.add_account("monitor1", "monpass", db.AccountType.MONITOR)
+        key, record_date = make_today_key()
+        time = datetime.datetime.now().strftime("%H:%M")
+
+        mocked_load_json_file.data = {}
+
+        res = client.post(
+            "/",
+            json={
+                "event": NEW_DAILY_RECORD,
+                "account": "patient1",
+                "password": "abc123",
+                "patient": "patient1",
+                "recordDate": record_date,
+                "key": key,
+                "time": time,
+                "food": 100,
+                "water": 200,
+                "urination": 1,
+                "defecation": 0,
+                "weight": "NaN",
+            },
+        )
+
+        self.assertEqual(res.json()["message"], RECORD_DATA_CREATE_SUCCESS)
+
+        res = client.post(
+            "/",
+            json={
+                "event": NEW_DAILY_RECORD,
+                "account": "patient1",
+                "password": "abc123",
+                "patient": "patient1",
+                "recordDate": record_date,
+                "key": key,
+                "time": time,
+                "food": 100,
+                "water": 200,
+                "urination": 1,
+                "defecation": 0,
+                "weight": "54 kg",
+            },
+        )
+
+        self.assertEqual(res.json()["message"], RECORD_DATA_CREATE_SUCCESS)
+
+        res = client.post(
+            "/",
+            json={
+                "event": NEW_DAILY_RECORD,
+                "account": "patient1",
+                "password": "abc123",
+                "patient": "patient1",
+                "recordDate": record_date,
+                "key": key,
+                "time": (
+                    datetime.datetime.now() - datetime.timedelta(minutes=1)
+                ).strftime("%H:%M"),
+                "food": 100,
+                "water": 200,
+                "urination": 1,
+                "defecation": 0,
+                "weight": "54 kg",
+            },
+        )
+
+        self.assertEqual(res.json()["message"], RECORD_DATA_CREATE_SUCCESS)
+
+        mocked_load_json_file.data = {
+            "patient1": {
+                "isEditing": False,
+                "limitAmount": "",
+                "foodCheckboxChecked": False,
+                "waterCheckboxChecked": False,
+            }
+        }
+
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_LIMIT,
+                "account": "monitor1",
+                "password": "monpass",
+                "patient": "patient1",
+                "isEditing": True,
+                "limitAmount": 1000,
+                "foodCheckboxChecked": True,
+                "waterCheckboxChecked": False,
+            },
+        )
+
+        self.assertEqual(res.json()["message"], SET_LIMITS_SUCCESS)
+
+        key, record_date = make_today_key()
+
+        mocked_load_json_file.data = {
+            "patient1": {
+                key: {
+                    "data": [
+                        {
+                            "time": time,
+                            "food": 100,
+                            "water": 100,
+                            "urination": 1,
+                            "defecation": 0,
+                        }
+                    ],
+                    "count": 1,
+                    "recordDate": record_date,
+                    "foodSum": 100,
+                    "waterSum": 100,
+                    "urinationSum": 1,
+                    "defecationSum": 0,
+                    "weight": "NaN",
+                },
+                "isEditing": False,
+                "limitAmount": "",
+                "foodCheckboxChecked": False,
+                "waterCheckboxChecked": False,
+            }
+        }
+
+        res = client.post(
+            "/",
+            json={
+                "event": UPDATE_DAILY_RECORD,
+                "account": "patient1",
+                "password": "abc123",
+                "patient": "patient1",
+                "time": time,
+                "food": 200,
+                "water": 100,
+                "urination": 1,
+                "defecation": 0,
+                "weight": "55.2 kg",
+                "key": key,
+            },
+        )
+
+        self.assertEqual(res.json()["message"], RECORD_DATA_UPDATE_SUCCESS)
+
+        key, record_date = make_today_key()
+
+        mocked_load_json_file.data = {
+            "patient1": {
+                key: {
+                    "data": [
+                        {
+                            "time": time,
+                            "food": 100,
+                            "water": 200,
+                            "urination": 1,
+                            "defecation": 0,
+                        }
+                    ],
+                    "count": 1,
+                    "recordDate": record_date,
+                    "foodSum": 100,
+                    "waterSum": 200,
+                    "urinationSum": 1,
+                    "defecationSum": 0,
+                    "weight": "NaN",
+                },
+                "isEditing": False,
+                "limitAmount": "",
+                "foodCheckboxChecked": False,
+                "waterCheckboxChecked": False,
+            }
+        }
+
+        res = client.post(
+            "/",
+            json={
+                "event": DELETE_DAILY_RECORD,
+                "account": "patient1",
+                "password": "abc123",
+                "patient": "patient1",
+                "key": key,
+                "time": time,
+            },
+        )
+        self.assertEqual(res.json()["message"], RECORD_DATA_DELETE_SUCCESS)
+
+        db.add_account("patient2", "abc123", db.AccountType.PATIENT)
+        mocked_load_json_file.data = {
+            "patient1": {
+                key: {
+                    "data": [
+                        {
+                            "time": time,
+                            "food": 100,
+                            "water": 200,
+                            "urination": 1,
+                            "defecation": 0,
+                        }
+                    ],
+                    "count": 1,
+                    "recordDate": record_date,
+                    "foodSum": 100,
+                    "waterSum": 200,
+                    "urinationSum": 1,
+                    "defecationSum": 0,
+                    "weight": "NaN",
+                },
+                "isEditing": False,
+                "limitAmount": "",
+                "foodCheckboxChecked": False,
+                "waterCheckboxChecked": False,
+            },
+            "patient2": {
+                "isEditing": False,
+                "limitAmount": "",
+                "foodCheckboxChecked": False,
+                "waterCheckboxChecked": False,
+            },
+        }
+
+        res = client.post(
+            "/",
+            json={
+                "event": TRANSFER_PATIENT,
+                "account": "monitor1",
+                "password": "monpass",
+                "patient_from": "patient1",
+                "patient_to": "patient2",
+            },
+        )
+        self.assertEqual(res.json()["message"], TRANSFER_PATIENT_SUCCESS)
+
+        mocked_load_json_file.data = {
+            "patient1": {
+                key: {
+                    "data": [
+                        {
+                            "time": time,
+                            "food": 100,
+                            "water": 200,
+                            "urination": 1,
+                            "defecation": 0,
+                        }
+                    ],
+                    "count": 1,
+                    "recordDate": record_date,
+                    "foodSum": 100,
+                    "waterSum": 200,
+                    "urinationSum": 1,
+                    "defecationSum": 0,
+                    "weight": "NaN",
+                },
+                "isEditing": False,
+                "limitAmount": "",
+                "foodCheckboxChecked": False,
+                "waterCheckboxChecked": False,
+            },
+            "patient2": {
+                "isEditing": False,
+                "limitAmount": "",
+                "foodCheckboxChecked": False,
+                "waterCheckboxChecked": False,
+            },
+        }
+
+        res = client.post(
+            "/",
+            json={
+                "event": TRANSFER_PATIENT,
+                "account": "monitor1",
+                "password": "monpass",
+                "patient_from": "patient2",
+                "patient_to": "patient1",
+            },
+        )
+        self.assertEqual(res.json()["message"], TRANSFER_PATIENT_NOT_EMPTY)
 
 
 if __name__ == "__main__":
