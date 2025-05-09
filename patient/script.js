@@ -243,7 +243,7 @@ Vue.createApp({
         this.selectedLanguage = savedLang;
       } else {
         // If invalid or not loaded, set default and save it
-        this.selectedLanguage = "zh-TW"; // Ensure default exists in files
+        this.selectedLanguage = "en"; // Ensure default exists in files
         localStorage.setItem("selectedLanguageCode", this.selectedLanguage);
       }
       console.log("Selected language set to:", this.selectedLanguage);
