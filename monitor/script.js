@@ -12,8 +12,8 @@ Vue.createApp({
   data() {
     return {
       // --- Core State ---
-      account: localStorage.getItem("account") || "",
-      password: localStorage.getItem("password") || "",
+      account: localStorage.getItem("monitorAccount") || "",
+      password: localStorage.getItem("monitorPassword") || "",
       authenticated: false,
       apiUrl: "",
       webUrl: "",
@@ -165,8 +165,8 @@ Vue.createApp({
       this.account = urlAccount;
       this.password = urlPassword;
       // Clear local storage if using URL params
-      localStorage.removeItem("account");
-      localStorage.removeItem("password");
+      localStorage.removeItem("monitorAccount");
+      localStorage.removeItem("monitorPassword");
       this.authenticate(); // Re-authenticate with URL params
     }
   },
@@ -325,8 +325,8 @@ Vue.createApp({
         } else {
           // Authentication Success
           this.authenticated = true;
-          localStorage.setItem("account", this.account);
-          localStorage.setItem("password", this.password);
+          localStorage.setItem("monitorAccount", this.account);
+          localStorage.setItem("monitorPassword", this.password);
 
           this.processFetchedData(fetchedData);
           await this.fetchUnmonitoredPatients(); // Fetch unmonitored list
@@ -344,8 +344,8 @@ Vue.createApp({
     resetCredentials() {
       this.account = "";
       this.password = "";
-      localStorage.removeItem("account");
-      localStorage.removeItem("password");
+      localStorage.removeItem("monitorAccount");
+      localStorage.removeItem("monitorPassword");
     },
 
     async confirmLogout() {

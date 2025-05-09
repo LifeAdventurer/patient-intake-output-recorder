@@ -139,8 +139,8 @@ Vue.createApp({
     const urlParams = new URLSearchParams(window.location.search);
     const urlAccount = urlParams.get("acct");
     const urlPassword = urlParams.get("pw");
-    const sessionAccount = localStorage.getItem("account");
-    const sessionPassword = localStorage.getItem("password");
+    const sessionAccount = localStorage.getItem("patientAccount");
+    const sessionPassword = localStorage.getItem("patientPassword");
 
     const accountToUse = urlAccount || sessionAccount;
     const passwordToUse = urlPassword || sessionPassword;
@@ -459,8 +459,8 @@ Vue.createApp({
             // Success case handled within fetchRecords by setting this.records
             this.authenticated = true;
             // Store credentials in localStorage
-            localStorage.setItem("account", this.account);
-            localStorage.setItem("password", this.password);
+            localStorage.setItem("patientAccount", this.account);
+            localStorage.setItem("patientPassword", this.password);
             console.log("Patient authentication successful.");
             this.setupBackgroundSync(); // Start background sync after successful login
             break;
@@ -478,7 +478,7 @@ Vue.createApp({
               "danger",
             );
             this.password = "";
-            localStorage.removeItem("password");
+            localStorage.removeItem("patientPassword");
             this.authenticated = false;
             break;
           case this.events.messages.INVALID_ACCT_TYPE: // Should ideally not happen for patient login
@@ -510,8 +510,8 @@ Vue.createApp({
       this.password = "";
       this.authenticated = false;
       this.records = {};
-      localStorage.removeItem("account");
-      localStorage.removeItem("password");
+      localStorage.removeItem("patientAccount");
+      localStorage.removeItem("patientPassword");
       this.stopBackgroundSyncInterval(); // Stop sync if logged out due to error
     },
 
