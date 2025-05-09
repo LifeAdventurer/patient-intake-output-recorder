@@ -2,8 +2,8 @@ Vue.createApp({
   data() {
     return {
       // --- Core State ---
-      account: "", // Loaded from sessionStorage or URL params
-      password: "", // Loaded from sessionStorage or URL params
+      account: "", // Loaded from localStorage or URL params
+      password: "", // Loaded from localStorage or URL params
       authenticated: false,
       apiUrl: "", // Loaded from config.json
       events: {}, // Loaded from events.json
@@ -139,8 +139,8 @@ Vue.createApp({
     const urlParams = new URLSearchParams(window.location.search);
     const urlAccount = urlParams.get("acct");
     const urlPassword = urlParams.get("pw");
-    const sessionAccount = sessionStorage.getItem("account");
-    const sessionPassword = sessionStorage.getItem("password");
+    const sessionAccount = localStorage.getItem("account");
+    const sessionPassword = localStorage.getItem("password");
 
     const accountToUse = urlAccount || sessionAccount;
     const passwordToUse = urlPassword || sessionPassword;
@@ -458,9 +458,9 @@ Vue.createApp({
           case this.events.messages.FETCH_RECORD_SUCCESS:
             // Success case handled within fetchRecords by setting this.records
             this.authenticated = true;
-            // Store credentials in sessionStorage
-            sessionStorage.setItem("account", this.account);
-            sessionStorage.setItem("password", this.password);
+            // Store credentials in localStorage
+            localStorage.setItem("account", this.account);
+            localStorage.setItem("password", this.password);
             console.log("Patient authentication successful.");
             this.setupBackgroundSync(); // Start background sync after successful login
             break;
@@ -478,7 +478,7 @@ Vue.createApp({
               "danger",
             );
             this.password = "";
-            sessionStorage.removeItem("password");
+            localStorage.removeItem("password");
             this.authenticated = false;
             break;
           case this.events.messages.INVALID_ACCT_TYPE: // Should ideally not happen for patient login
@@ -510,8 +510,8 @@ Vue.createApp({
       this.password = "";
       this.authenticated = false;
       this.records = {};
-      sessionStorage.removeItem("account");
-      sessionStorage.removeItem("password");
+      localStorage.removeItem("account");
+      localStorage.removeItem("password");
       this.stopBackgroundSyncInterval(); // Stop sync if logged out due to error
     },
 
