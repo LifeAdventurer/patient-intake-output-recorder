@@ -74,6 +74,11 @@ Vue.createApp({
         waterCheckboxChecked: false,
       },
 
+      // --- i18n State ---
+      selectedLanguage: "zh-TW", // Default language
+      supportedLanguages: [], // Loaded from supported_languages.json
+      curLangTexts: {}, // Loaded from lang_texts.json
+
       // --- Date/Time ---
       currentDate: "", // Formatted date string for display
       currentTime: "", // Formatted time string for display
@@ -84,6 +89,15 @@ Vue.createApp({
   // --- Computed Properties ---
   // Used for deriving data reactively from the main state
   computed: {
+    /** Returns the translation object for the currently selected language */
+    curLangText() {
+      return (
+        this.curLangTexts[this.selectedLanguage] ||
+        this.curLangTexts["zh-TW"] ||
+        {}
+      ); // Fallback to zh-TW or empty object
+    },
+
     // Returns patient records with date keys reversed for display (newest first)
     // Filters out the special 'keysToFilter' properties
     reversedPatientRecords() {
@@ -134,8 +148,9 @@ Vue.createApp({
   // Code to run at specific points in the component's lifecycle
   async created() {
     // Fetch essential config before doing anything else
-    await this.fetchConfig();
     await this.loadAPIEvents();
+    await this.fetchConfig();
+    await this.loadLanguageData(); // Loads supported languages and texts
 
     // Attempt initial authentication if credentials exist
     if (this.account && this.password) {
@@ -194,10 +209,15 @@ Vue.createApp({
         const config = await response.json();
         this.apiUrl = config.apiUrl;
         this.webUrl = config.webUrl;
+        this.selectedLanguage = config.defaultLanguage;
+        if (this.supportedLanguages.includes(this.selectedLanguage)) {
+          this.selectedLanguage = "zh-TW";
+        }
+        console.log("Selected language set to:", this.selectedLanguage);
         console.log("Configuration loaded.");
       } catch (error) {
         console.error("Failed to load config.json:", error);
-        this.showAlert("無法載入應用程式設定，請稍後再試。", "danger");
+        this.showAlert(this.curLangText?.alerts?.config?.load_error, "danger");
         // Potentially halt application initialization here if config is critical
       }
     },
@@ -211,8 +231,43 @@ Vue.createApp({
         console.log("API events loaded.");
       } catch (error) {
         console.error("Failed to load events.json:", error);
-        this.showAlert("無法載入 API 事件設定，請稍後再試。", "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.config?.events_load_error,
+          "danger",
+        );
         // Potentially halt application initialization here if events are critical
+      }
+    },
+
+    /**
+     * Load supported language list and translation texts.
+     * @returns {Promise<void>}
+     * @throws {Error} If supported_languages.json or lang_texts.json fails to load.
+     */
+    async loadLanguageData() {
+      try {
+        const [langResponse, textsResponse] = await Promise.all([
+          fetch("./supported_languages.json"),
+          fetch("./lang_texts.json"),
+        ]);
+
+        if (!langResponse.ok)
+          throw new Error(
+            `Failed to load supported_languages.json: ${langResponse.status}`,
+          );
+        this.supportedLanguages = await langResponse.json();
+
+        if (!textsResponse.ok)
+          throw new Error(
+            `Failed to load lang_texts.json: ${textsResponse.status}`,
+          );
+        this.curLangTexts = await textsResponse.json();
+
+        console.log("Language data loaded.");
+      } catch (error) {
+        console.error("Failed to load language data:", error);
+        // Show alert in default language as curLangText might not be available
+        this.showAlert("Failed to load language files.", "danger");
       }
     },
 
@@ -284,7 +339,10 @@ Vue.createApp({
     // --- Authentication ---
     async authenticate() {
       if (!this.account || !this.password) {
-        this.showAlert("請輸入帳號和密碼。", "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.login?.missing_credentials,
+          "danger",
+        );
         return;
       }
       console.log("Attempting authentication for:", this.account);
@@ -305,20 +363,29 @@ Vue.createApp({
         ) {
           switch (fetchedData.message) {
             case this.events.messages.ACCT_NOT_EXIST:
-              this.showAlert("帳號不存在", "danger");
+              this.showAlert(
+                this.curLangText?.alerts?.login?.acct_not_exist,
+                "danger",
+              );
               this.resetCredentials();
               break;
             case this.events.messages.AUTH_FAIL_PASSWORD:
-              this.showAlert("密碼錯誤", "danger");
+              this.showAlert(
+                this.curLangText?.alerts?.login?.auth_fail_password,
+                "danger",
+              );
               this.password = ""; // Clear only password
               break;
             case this.events.messages.INVALID_ACCT_TYPE:
-              this.showAlert("此帳號沒有管理權限", "danger");
+              this.showAlert(
+                this.curLangText?.alerts?.login?.invalid_acct_type,
+                "danger",
+              );
               this.resetCredentials();
               break;
             default:
               // Handle other potential non-success messages
-              this.showAlert(`驗證失敗: ${fetchedData.message}`, "danger");
+              // this.showAlert(`驗證失敗: ${fetchedData.message}`, "danger");
               this.resetCredentials();
           }
           this.authenticated = false;
@@ -334,7 +401,13 @@ Vue.createApp({
         }
       } catch (error) {
         console.error("Authentication failed:", error);
-        this.showAlert(`登入時發生錯誤: ${error.message}`, "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.login?.error.replace(
+            "{{error}}",
+            error.message,
+          ),
+          "danger",
+        );
         this.authenticated = false;
         // Consider reset credentials on network/other errors too
         // this.resetCredentials();
@@ -349,7 +422,9 @@ Vue.createApp({
     },
 
     async confirmLogout() {
-      const confirmed = await this.showConfirm("請確認是否要登出?");
+      const confirmed = await this.showConfirm(
+        this.curLangText?.confirms?.logout,
+      );
       if (confirmed) {
         console.log("Logging out user:", this.account);
         this.authenticated = false;
@@ -387,7 +462,7 @@ Vue.createApp({
           "Invalid data received in processFetchedData:",
           fetchedData,
         );
-        this.showAlert("從伺服器接收到的資料格式不正確。", "danger");
+        this.showAlert(this.curLangText?.alerts?.sync?.invalid_data, "danger");
         return;
       }
 
@@ -471,7 +546,13 @@ Vue.createApp({
           // Handle potential errors during sync (e.g., permissions changed)
           console.warn("Sync failed with message:", fetchedData.message);
           // Maybe show a less intrusive alert or handle specific errors like re-authentication needed
-          this.showAlert(`資料同步失敗: ${fetchedData.message}`, "warning"); // Use warning level
+          this.showAlert(
+            this.curLangText?.alerts?.sync?.error.replace(
+              "{{error}}",
+              fetchedData.message,
+            ),
+            "warning",
+          ); // Use warning level
           if (
             fetchedData.message === this.events.messages.AUTH_FAIL_PASSWORD ||
             fetchedData.message === this.events.messages.ACCT_NOT_EXIST
@@ -549,7 +630,9 @@ Vue.createApp({
             `Failed to update records for ${patientAccount}: ${message}`,
           );
           this.showAlert(
-            `更新 ${patientAccount} 的紀錄時失敗: ${message}`,
+            this.curLangText?.alerts?.update?.error
+              .replace("{{patient}}", patientAccount)
+              .replace("{{error}}", message),
             "danger",
           );
           // Potentially revert local changes or re-sync to get server state
@@ -558,7 +641,9 @@ Vue.createApp({
       } catch (error) {
         console.error(`Error updating records for ${patientAccount}:`, error);
         this.showAlert(
-          `更新 ${patientAccount} 紀錄時發生網路錯誤: ${error.message}`,
+          this.curLangText?.alerts?.update?.network_error
+            .replace("{{patient}}", patientAccount)
+            .replace("{{error}}", error.message),
           "danger",
         );
         // Potentially revert local changes or re-sync
@@ -591,7 +676,10 @@ Vue.createApp({
             response.message,
           );
           this.showAlert(
-            `無法獲取未監測病患列表: ${response.message}`,
+            this.curLangText?.alerts?.manage?.fetch_unmonitored_error.replace(
+              "{{error}}",
+              response.message,
+            ),
             "warning",
           );
         }
@@ -616,21 +704,31 @@ Vue.createApp({
 
         if (message === this.events.messages.ADD_PATIENT_SUCCESS) {
           console.log(`Patient ${patientAccount} added successfully.`);
-          this.showAlert(`已成功將 ${patientAccount} 加入監測列表`, "success");
+          this.showAlert(
+            this.curLangText?.alerts?.manage?.add_success.replace(
+              "{{patient}}",
+              patientAccount,
+            ),
+            "success",
+          );
           // Refresh both lists after adding
           await this.syncMonitorData(); // Gets monitored list (including new one)
           // fetchUnmonitored is called within syncMonitorData's finally block
         } else {
           console.error(`Failed to add patient ${patientAccount}: ${message}`);
           this.showAlert(
-            `將 ${patientAccount} 加入監測列表時失敗: ${message}`,
+            this.curLangText?.alerts?.manage?.add_fail
+              .replace("{{patient}}", patientAccount)
+              .replace("{{error}}", message),
             "danger",
           );
         }
       } catch (error) {
         console.error(`Error adding patient ${patientAccount}:`, error);
         this.showAlert(
-          `將 ${patientAccount} 加入監測列表時發生錯誤: ${error.message}`,
+          this.curLangText?.alerts?.manage?.add_error
+            .replace("{{patient}}", patientAccount)
+            .replace("{{error}}", error.message),
           "danger",
         );
       }
@@ -654,7 +752,10 @@ Vue.createApp({
         if (message === this.events.messages.REMOVE_PATIENT_SUCCESS) {
           console.log(`Patient ${patientAccount} removed from monitoring.`);
           this.showAlert(
-            `已成功將 ${patientAccount} 從監測列表移除`,
+            this.curLangText?.alerts?.manage?.remove_success.replace(
+              "{{patient}}",
+              patientAccount,
+            ),
             "success",
           );
           // Refresh lists
@@ -664,7 +765,9 @@ Vue.createApp({
             `Failed to remove ${patientAccount} from monitoring: ${message}`,
           );
           this.showAlert(
-            `從監測列表移除 ${patientAccount} 時失敗: ${message}`,
+            this.curLangText?.alerts?.manage?.remove_fail
+              .replace("{{patient}}", patientAccount)
+              .replace("{{error}}", message),
             "danger",
           );
         }
@@ -674,7 +777,9 @@ Vue.createApp({
           error,
         );
         this.showAlert(
-          `移除 ${patientAccount} 時發生錯誤: ${error.message}`,
+          this.curLangText?.alerts?.manage?.remove_error
+            .replace("{{patient}}", patientAccount)
+            .replace("{{error}}", error.message),
           "danger",
         );
       }
@@ -684,7 +789,10 @@ Vue.createApp({
       if (!patientAccount) return;
 
       const confirmed = await this.showConfirm(
-        `請確認病患: ${patientAccount} 是否要出院?\n這將清除該病患的所有紀錄且無法復原！\n\n如果您只是想暫時停止監測，請使用「移除監測」功能。`,
+        this.curLangText?.confirms?.delete_patient.replace(
+          "{{patient}}",
+          patientAccount,
+        ),
       );
       if (!confirmed) return;
 
@@ -701,7 +809,9 @@ Vue.createApp({
           (p) => p[0] === patientAccount,
         );
         if (!patientInfo) {
-          throw new Error("找不到該病患的驗證資訊。");
+          throw new Error(
+            this.curLangText?.alerts?.manage?.patient_info_missing,
+          );
         }
         const patientPassword = patientInfo[1];
 
@@ -717,7 +827,10 @@ Vue.createApp({
         if (message === this.events.messages.DELETE_PATIENT_SUCCESS) {
           console.log(`Patient ${patientAccount} deleted successfully.`);
           this.showAlert(
-            `已成功刪除病患 ${patientAccount} 及其所有資料`,
+            this.curLangText?.alerts?.manage?.delete_success.replace(
+              "{{patient}}",
+              patientAccount,
+            ),
             "success",
           );
           // Refresh lists thoroughly
@@ -727,14 +840,18 @@ Vue.createApp({
             `Failed to delete patient ${patientAccount}: ${message}`,
           );
           this.showAlert(
-            `刪除病患 ${patientAccount} 時失敗: ${message}`,
+            this.curLangText?.alerts?.manage?.delete_fail
+              .replace("{{patient}}", patientAccount)
+              .replace("{{error}}", message),
             "danger",
           );
         }
       } catch (error) {
         console.error(`Error deleting patient ${patientAccount}:`, error);
         this.showAlert(
-          `刪除病患 ${patientAccount} 時發生錯誤: ${error.message}`,
+          this.curLangText?.alerts?.manage?.delete_error
+            .replace("{{patient}}", patientAccount)
+            .replace("{{error}}", error.message),
           "danger",
         );
       }
@@ -745,7 +862,7 @@ Vue.createApp({
 
       if (needConfirm) {
         const confirmed = await this.showConfirm(
-          `確定要清除 ${patientAccount} 的所有資料嗎?此操作無法還原。`,
+          this.curLangText?.confirms?.clear_data,
         );
         if (!confirmed) return;
       }
@@ -754,7 +871,13 @@ Vue.createApp({
       try {
         // Use the updateRecords function with the cleared data
         await this.updateRecords(patientAccount, this.keysToFilter); // Default data
-        this.showAlert(`已成功清除 ${patientAccount} 的所有資料`, "success");
+        this.showAlert(
+          this.curLangText?.alerts?.manage?.clear_success.replace(
+            "{{patient}}",
+            patientAccount,
+          ),
+          "success",
+        );
       } catch (error) {
         // Error handling is done within updateRecords, but catch here just in case.
         console.error(
@@ -762,7 +885,13 @@ Vue.createApp({
           error,
         );
         // Alert might be redundant if updateRecords showed one already.
-        // this.showAlert(`清除 ${patientAccount} 的資料時發生錯誤`, "danger");
+        // this.showAlert(
+        //   this.curLangText?.alerts?.manage?.clear_error.replace(
+        //     "{{patient}}",
+        //     patientAccount,
+        //   ),
+        //   "danger",
+        // );
       }
     },
 
@@ -818,12 +947,18 @@ Vue.createApp({
           this.editingRecordPatientAccount &&
           this.editingRecordPatientAccount !== patientAccount
         ) {
-          this.showAlert("請先儲存或取消目前正在編輯的其他紀錄。", "warning");
+          this.showAlert(
+            this.curLangText?.alerts?.restriction?.save_other_first,
+            "warning",
+          );
           return;
         }
         // If a restriction is being edited, prevent record editing
         if (this.isEditingRestriction) {
-          this.showAlert("請先儲存或取消飲食限制的編輯。", "warning");
+          this.showAlert(
+            this.curLangText?.alerts?.restriction?.save_restriction_first,
+            "warning",
+          );
           return;
         }
 
@@ -968,21 +1103,16 @@ Vue.createApp({
 
       // --- Confirmation ---
       this.confirming = true; // Prevent sync during confirmation
-      const dietaryItemsLabel = {
-        food: "進食",
-        water: "喝水",
-        urination: "排尿",
-        defecation: "排便",
-      };
-      const confirmMessage = [
-        "請確認是否移除這筆資料:",
-        `床號: ${patientAccount}`,
-        `日期: ${dateKey.replace(/_/g, "/")}`, // Display format
-        `時間: ${record.time}`,
-        ...this.dietaryItems.map(
-          (item) => `${dietaryItemsLabel[item]}: ${record[item] ?? 0}`,
-        ),
-      ].join("\n");
+      let confirmMessage = this.curLangText?.confirms?.remove_record
+        .replace("{{patient}}", patientAccount)
+        .replace("{{date}}", dateKey.replace(/_/g, "/"))
+        .replace("{{time}}", record.time);
+      this.dietaryItems.forEach((item) => {
+        confirmMessage = confirmMessage.replace(
+          `{{${item}}}`,
+          record[item] ?? 0,
+        );
+      });
 
       const confirmed = await this.showConfirm(confirmMessage);
       this.confirming = false; // Allow sync again after modal closes
@@ -1015,10 +1145,19 @@ Vue.createApp({
         // 3. Update the backend with the modified patient record
         await this.updateRecords(patientAccount); // Send the whole patient record again
 
-        this.showAlert("紀錄已成功移除。", "success");
+        this.showAlert(
+          this.curLangText?.alerts?.record?.record_success,
+          "success",
+        );
       } catch (error) {
         console.error("Error during record removal:", error);
-        this.showAlert(`移除紀錄時發生錯誤: ${error.message}`, "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.record?.remove_error.replace(
+            "{{error}}",
+            error.message,
+          ),
+          "danger",
+        );
         // Re-sync data to ensure consistency after error
         await this.syncMonitorData();
       } finally {
@@ -1043,11 +1182,11 @@ Vue.createApp({
       ) {
         const limitAmount = parseInt(limitAmountStr);
         if (foodChecked && waterChecked) {
-          text = `限制 食物+水 < ${limitAmount} g/ml`;
+          text = `${this.curLangText?.limit} ${this.curLangText?.limit_food}+${this.curLangText?.limit_water} < ${limitAmount} g/ml`;
         } else if (foodChecked) {
-          text = `限制 食物 < ${limitAmount} g/ml`;
+          text = `${this.curLangText?.limit} ${this.curLangText?.limit_food} < ${limitAmount} g`;
         } else if (waterChecked) {
-          text = `限制 水 < ${limitAmount} g/ml`;
+          text = `${this.curLangText?.limit} ${this.curLangText?.limit_water} < ${limitAmount} ml`;
         }
       }
 
@@ -1088,7 +1227,7 @@ Vue.createApp({
           // No checkboxes checked
           if (limitAmountStr !== "") {
             isValid = false;
-            errorMsg = "請至少勾選一個限制項目。";
+            errorMsg = this.curLangText?.alerts?.restriction?.check_option;
             // No checkboxes checked, clear the amount for consistency?
             // record.limitAmount = "";
           }
@@ -1096,12 +1235,14 @@ Vue.createApp({
         } else {
           if (limitAmountStr === "") {
             isValid = false;
-            errorMsg = "已勾選限制項目，請輸入有效的限制數值(大於等於 0)。";
+            errorMsg =
+              this.curLangText?.alerts?.restriction?.checked_but_enter_number;
           } else {
             const parsedAmount = parseInt(limitAmountStr);
             if (isNaN(parsedAmount) || parsedAmount < 0) {
               isValid = false;
-              errorMsg = "限制數值必須是有效的非負整數。";
+              errorMsg =
+                this.curLangText?.alerts?.restriction?.enter_positive_integer;
             } else {
               // Ensure stored value is numeric if valid
               record.limitAmount = parsedAmount;
@@ -1144,7 +1285,10 @@ Vue.createApp({
         }
         // If a record row is being edited, prevent restriction editing
         if (this.editingRecordIndex !== -1) {
-          this.showAlert("請先儲存或取消目前正在編輯的紀錄。", "warning");
+          this.showAlert(
+            this.curLangText?.alerts?.restriction?.save_other_first,
+            "warning",
+          );
           return;
         }
 
@@ -1175,11 +1319,17 @@ Vue.createApp({
 
       // --- Validations ---
       if (!toPatient) {
-        this.showAlert("請輸入目標帳號。", "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.transfer?.target_required,
+          "danger",
+        );
         return;
       }
       if (fromPatient === toPatient) {
-        this.showAlert("來源和目標帳號不能相同。", "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.transfer?.same_account,
+          "danger",
+        );
         return;
       }
 
@@ -1188,13 +1338,16 @@ Vue.createApp({
       const isTargetUnmonitored = this.unmonitoredPatients.includes(toPatient);
 
       if (!isTargetMonitored && !isTargetUnmonitored) {
-        this.showAlert("目標帳號不存在。", "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.transfer?.target_not_exist,
+          "danger",
+        );
         return;
       }
 
       if (isTargetUnmonitored) {
         this.showAlert(
-          "目標帳號尚未加入監測，請先將其加入監測列表後再進行轉移。",
+          this.curLangText?.alerts?.transfer?.target_not_monitored,
           "warning",
         );
         return;
@@ -1211,7 +1364,7 @@ Vue.createApp({
 
       if (targetHasExistingData) {
         this.showAlert(
-          "目標帳號已有資料，無法轉移。請先清除目標帳號的資料。",
+          this.curLangText?.alerts?.transfer?.target_has_data,
           "danger",
         );
         return;
@@ -1219,7 +1372,9 @@ Vue.createApp({
 
       // --- Confirmation ---
       const confirmed = await this.showConfirm(
-        `確定要將 ${fromPatient} 的資料轉移到 ${toPatient} 嗎?`,
+        this.curLangText?.confirms?.transfer_data
+          .replace("{{from}}", fromPatient)
+          .replace("{{to}}", toPatient),
       );
       if (!confirmed) return;
 
@@ -1230,7 +1385,12 @@ Vue.createApp({
       try {
         const dataToTransfer = this.patientRecords[fromPatient];
         if (!dataToTransfer) {
-          throw new Error(`找不到來源帳號 ${fromPatient} 的資料。`);
+          throw new Error(
+            this.curLangText?.alerts?.transfer?.source_data_missing.replace(
+              "{{patient}}",
+              fromPatient,
+            ),
+          );
         }
 
         // 1. Update target patient's record on the backend
@@ -1248,7 +1408,9 @@ Vue.createApp({
           if (modal) modal.hide();
         }
         this.showAlert(
-          `資料已成功從 ${fromPatient} 轉移到 ${toPatient}`,
+          this.curLangText?.alerts?.transfer?.success
+            .replace("{{from}}", fromPatient)
+            .replace("{{to}}", toPatient),
           "success",
         );
 
@@ -1256,7 +1418,13 @@ Vue.createApp({
         await this.syncMonitorData();
       } catch (error) {
         console.error("Data transfer failed:", error);
-        this.showAlert(`資料轉移失敗: ${error.message}`, "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.transfer?.fail.replace(
+            "{{error}}",
+            error.message,
+          ),
+          "danger",
+        );
         // TODO: Consider if partial transfer requires manual cleanup or retry
       }
     },
@@ -1280,7 +1448,11 @@ Vue.createApp({
 
           if (response.message === this.events.messages.ACCT_CREATED) {
             // Check for specific success message
-            this.signUpAlertMessage = `病患帳號 ${this.signUpPatientAccount} 註冊成功。`;
+            this.signUpAlertMessage =
+              this.curLangText?.alerts?.signUp?.success.replace(
+                "{{patient}}",
+                this.signUpPatientAccount,
+              );
             this.signUpAlertClass = "alert-success";
 
             // Auto-add to monitor if checked
@@ -1313,18 +1485,27 @@ Vue.createApp({
           } else if (
             response.message === this.events.messages.ACCT_ALREADY_EXISTS
           ) {
-            this.signUpAlertMessage = "此病患帳號名稱已被使用。";
+            this.signUpAlertMessage =
+              this.curLangText?.alerts?.signUp?.acct_exists;
             this.signUpAlertClass = "alert-danger";
             this.signUpPatientAccount = "";
             this.signUpPatientPassword = "";
           } else {
             // Handle other potential errors from API
-            this.signUpAlertMessage = `註冊失敗: ${response.message || "未知錯誤"}`;
+            this.signUpAlertMessage =
+              this.curLangText?.alerts?.signUp?.fail.replace(
+                "{{error}}",
+                response.message,
+              );
             this.signUpAlertClass = "alert-danger";
           }
         } catch (error) {
           console.error("Sign up failed:", error);
-          this.signUpAlertMessage = `註冊時發生錯誤: ${error.message}`;
+          this.signUpAlertMessage =
+            this.curLangText?.alerts?.signUp?.error.replace(
+              "error",
+              error.message,
+            );
           this.signUpAlertClass = "alert-danger";
         }
       } else {
@@ -1332,7 +1513,8 @@ Vue.createApp({
         console.log("Sign up form invalid.");
         if (!form) console.error("Sign up form element not found.");
         // Generic message, but browser usually handles feedback
-        this.signUpAlertMessage = "請填寫所有必填欄位。";
+        this.signUpAlertMessage =
+          this.curLangText?.modals?.signUp?.validation_fill_required;
         this.signUpAlertClass = "alert-warning";
       }
     },
@@ -1354,7 +1536,13 @@ Vue.createApp({
       );
 
       if (!patientInfo) {
-        this.showAlert(`找不到病患 ${patientAccount} 的登入資訊`, "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.qrCode?.patient_info_missing.replace(
+            "{{patient}}",
+            patientAccount,
+          ),
+          "danger",
+        );
         return;
       }
 
@@ -1366,7 +1554,7 @@ Vue.createApp({
       const encodedPassword = encodeURIComponent(patient_password);
 
       if (!this.webUrl) {
-        this.showAlert("網頁 URL 未設定，無法生成 QR Code。", "danger");
+        this.showAlert(this.curLangText?.alerts?.qrCode?.url_missing, "danger");
         return;
       }
 
@@ -1409,7 +1597,13 @@ Vue.createApp({
         modal.show();
       } catch (error) {
         console.error("Failed to generate or display QR Code:", error);
-        this.showAlert(`產生 QR Code 時發生錯誤: ${error.message}`, "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.qrCode?.generate_error.replace(
+            "{{error}}",
+            error.message,
+          ),
+          "danger",
+        );
       }
     },
 
@@ -1419,13 +1613,16 @@ Vue.createApp({
       const icon = btn ? btn.querySelector("i") : null;
 
       if (!canvas) {
-        this.showAlert("找不到 QR Code 圖片。", "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.qrCode?.canvas_missing,
+          "danger",
+        );
         return;
       }
 
       if (!navigator.clipboard || !navigator.clipboard.write) {
         this.showAlert(
-          "您的瀏覽器不支援或未啟用剪貼簿複製圖片功能。",
+          this.curLangText?.alerts?.qrCode?.clipboard_unsupported,
           "warning",
         );
         return;
@@ -1457,14 +1654,15 @@ Vue.createApp({
           }, 2000);
         } else {
           // Show alert when icon visual feedback is not working
-          this.showAlert("QR Code 圖片已複製到剪貼簿。", "success", 2000); // Shorter success message
+          this.showAlert(
+            this.curLangText?.alerts?.qrCode?.copy_success,
+            "success",
+            2000,
+          ); // Shorter success message
         }
       } catch (error) {
         console.error("Copy QR Code image failed:", error);
-        this.showAlert(
-          "複製 QR Code 失敗。請嘗試在圖片上按右鍵 -> 複製圖片。",
-          "danger",
-        );
+        this.showAlert(this.curLangText?.alerts?.qrCode?.copy_fail, "danger");
       }
     },
 
@@ -1473,7 +1671,10 @@ Vue.createApp({
       const patientName = this.qrCodePatient || "病患"; // Use stored name
 
       if (!canvas) {
-        this.showAlert("找不到 QR Code 圖片。", "danger");
+        this.showAlert(
+          this.curLangText?.alerts?.qrCode?.canvas_missing,
+          "danger",
+        );
         return;
       }
 
@@ -1483,7 +1684,7 @@ Vue.createApp({
 
         if (!printWindow) {
           this.showAlert(
-            "無法開啟列印視窗，請檢查您的彈出視窗攔截設定。",
+            this.curLangText?.alerts?.qrCode?.print_window_error,
             "warning",
           );
           return;
@@ -1492,7 +1693,7 @@ Vue.createApp({
         printWindow.document.write(`
             <html>
                 <head>
-                    <title>列印 QR Code - ${patientName}</title>
+                    <title>Print QR Code - ${patientName}</title>
                     <style>
                         @media print {
                             body { margin: 0; } /* Remove default margins for printing */
@@ -1535,7 +1736,10 @@ Vue.createApp({
       } catch (error) {
         console.error("Failed to prepare QR Code for printing:", error);
         this.showAlert(
-          `準備列印 QR Code 時發生錯誤: ${error.message}`,
+          this.curLangText?.alerts?.qrCode?.print_prepare_error.replace(
+            "{{error}}",
+            error.message,
+          ),
           "danger",
         );
       }
@@ -1641,7 +1845,7 @@ Vue.createApp({
     /** Gets the first and last record dates for a patient */
     getFirstAndLastDates(patientAccount) {
       const record = this.patientRecords[patientAccount];
-      if (!record) return "無紀錄";
+      if (!record) return this.curLangText?.no_records;
 
       const dateKeys = Object.keys(record).filter(
         (key) =>
@@ -1650,7 +1854,7 @@ Vue.createApp({
       );
 
       if (dateKeys.length === 0) {
-        return "無紀錄";
+        return this.curLangText?.no_records;
       }
 
       // Sort keys chronologically (important if keys aren't guaranteed ordered)
