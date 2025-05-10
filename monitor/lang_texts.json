@@ -1,0 +1,196 @@
+{
+  "zh-TW": {
+    "app_title": "護理站數據監測",
+    "loading": "載入中...",
+    "error": "錯誤",
+    "actions": "操作",
+    "confirm": "確定",
+    "cancel": "取消",
+    "close": "關閉",
+    "confirm_action": "請確認操作",
+    "search_placeholder": "依病床號搜尋...",
+    "manage": "管理",
+    "register": "註冊",
+    "logout": "登出",
+    "account": "帳號",
+    "password": "密碼",
+    "show_password": "顯示密碼",
+    "hide_password": "隱藏密碼",
+    "login": "登入",
+    "edit": "編輯",
+    "save": "儲存",
+    "remove": "刪除",
+    "all_records": "所有紀錄",
+    "no_records": "無紀錄",
+    "no_historical_records": "尚無歷史紀錄",
+    "weight": "體重",
+    "not_measured": "未測量",
+    "record_count_unit": "筆",
+    "timestamp": "時間",
+    "food": "食物",
+    "water": "水",
+    "urine": "尿液",
+    "defecate": "排便",
+    "sum": "總和",
+    "unit_g": "克",
+    "unit_ml": "毫升",
+    "unit_times": "次",
+    "unit_kg": "公斤",
+    "today_summary": "今日總計",
+    "no_records_yet_for_today": "今日尚無紀錄",
+    "limit": "限制",
+    "limit_food": "食物",
+    "limit_water": "水",
+    "limit_plus": "+",
+    "limit_less_than": "<",
+    "limit_unit": "g/ml",
+    "no_limit_set": "無限制",
+    "edit_restriction": "編輯限制",
+    "save_restriction": "儲存限制",
+    "show_qr_code": "顯示 QR Code",
+    "scroll_to_top": "回到頂部",
+    "login_view": {
+      "title": "管理員登入",
+      "footer_copyright": "Copyright © 2023-{{year}} LifeAdventurer | All Rights Reserved.",
+      "footer_license": "程式碼授權",
+      "footer_version": "版本"
+    },
+    "modals": {
+      "signUp": {
+        "title": "註冊新病患帳號",
+        "account_label": "病患帳號",
+        "account_help": "建議使用容易識別的唯一代號，例如病床號。",
+        "password_label": "病患密碼",
+        "password_help": "此密碼供病患或家屬透過 QR Code 登入記錄，請妥善告知。",
+        "stay_open_label": "註冊成功後保持此視窗開啟 (方便連續註冊)",
+        "auto_add_label": "自動將註冊的病患加入監測列表",
+        "register_button": "註冊",
+        "validation_invalid_account": "請輸入有效的帳號 (不能只包含空白字元)。",
+        "validation_password_required": "請輸入密碼。",
+        "validation_fill_required": "請填寫所有必填欄位。"
+      },
+      "manage": {
+        "title": "管理病患",
+        "unmonitored_header": "未監測病患",
+        "monitored_header": "監測中病患",
+        "add_monitor_button": "加入監測",
+        "add_monitor_title": "將此病患加入監測列表",
+        "transfer_button": "轉移資料",
+        "transfer_title": "將此病患的資料轉移至另一位監測中病患",
+        "clear_button": "清除紀錄",
+        "clear_title": "清除此病患的所有飲食紀錄 (保留限制設定)",
+        "remove_monitor_button": "取消監測",
+        "remove_monitor_title": "將此病患移出監測列表 (資料會保留)",
+        "delete_button": "出院 (刪除)",
+        "delete_title": "將此病患完全刪除 (包含所有資料，無法復原!)",
+        "empty_unmonitored": "無未監測病患",
+        "empty_monitored": "無監測中病患"
+      },
+      "qrCode": {
+        "title": "病患 {{patient}} 登入資訊",
+        "scan_prompt": "請病患或家屬掃描此 QR Code 登入記錄：",
+        "login_url_label": "登入網址:",
+        "account_label": "帳號:",
+        "password_label": "密碼:",
+        "copy_image_button": "複製圖片",
+        "copy_image_title": "複製 QR Code 圖片",
+        "print_button": "列印",
+        "print_title": "列印 QR Code 及帳號密碼"
+      },
+      "confirm": {
+        "title": "請確認操作"
+      },
+      "transfer": {
+        "title": "轉移病患資料",
+        "prompt": "將病患 <strong class=\"text-primary\">{{from}}</strong> 的所有飲食紀錄轉移至：",
+        "target_label": "目標病患帳號 (監測中)",
+        "target_placeholder": "請輸入目標病患帳號",
+        "warning": "注意：目標帳號的現有飲食紀錄將被來源資料覆蓋，且來源帳號的紀錄將被清除。限制設定不會轉移。此操作無法復原。",
+        "confirm_button": "確認轉移"
+      }
+    },
+    "alerts": {
+      "login": {
+        "acct_not_exist": "帳號不存在",
+        "auth_fail_password": "密碼錯誤",
+        "invalid_acct_type": "此帳號沒有管理權限",
+        "error": "登入時發生錯誤: {{error}}",
+        "missing_credentials": "請輸入帳號和密碼。"
+      },
+      "config": {
+        "load_error": "無法載入應用程式設定，請稍後再試。",
+        "events_load_error": "無法載入 API 事件設定，請稍後再試。"
+      },
+      "sync": {
+        "error": "資料同步失敗: {{error}}",
+        "invalid_data": "從伺服器接收到的資料格式不正確。"
+      },
+      "update": {
+        "error": "更新 {{patient}} 的紀錄時失敗: {{error}}",
+        "network_error": "更新 {{patient}} 紀錄時發生網路錯誤: {{error}}"
+      },
+      "manage": {
+        "fetch_unmonitored_error": "無法獲取未監測病患列表: {{error}}",
+        "add_success": "已成功將 {{patient}} 加入監測列表",
+        "add_fail": "將 {{patient}} 加入監測列表時失敗: {{error}}",
+        "add_error": "將 {{patient}} 加入監測列表時發生錯誤: {{error}}",
+        "remove_success": "已成功將 {{patient}} 從監測列表移除",
+        "remove_fail": "從監測列表移除 {{patient}} 時失敗: {{error}}",
+        "remove_error": "移除 {{patient}} 時發生錯誤: {{error}}",
+        "delete_success": "已成功刪除病患 {{patient}} 及其所有資料",
+        "delete_fail": "刪除病患 {{patient}} 時失敗: {{error}}",
+        "delete_error": "刪除病患 {{patient}} 時發生錯誤: {{error}}",
+        "clear_success": "已成功清除 {{patient}} 的所有飲食紀錄",
+        "clear_error": "清除 {{patient}} 的資料時發生錯誤",
+        "patient_info_missing": "找不到該病患的驗證資訊。"
+      },
+      "restriction": {
+        "check_option_and_number": "請勾選選項並輸入有效的數字。",
+        "check_option": "請勾選選項。",
+        "enter_number": "請輸入有效的數字。",
+        "enter_positive_integer": "請輸入有效的正整數。",
+        "save_other_first": "請先儲存或取消目前正在編輯的其他紀錄。",
+        "save_restriction_first": "請先儲存或取消飲食限制的編輯。"
+      },
+      "record": {
+        "remove_success": "紀錄已成功移除。",
+        "remove_error": "移除紀錄時發生錯誤: {{error}}"
+      },
+      "transfer": {
+        "target_required": "請輸入目標帳號。",
+        "target_not_exist": "目標帳號不存在。",
+        "target_not_monitored": "目標帳號尚未加入監測，請先將其加入監測列表後再進行轉移。",
+        "target_has_data": "目標帳號已有資料，無法轉移。請先清除目標帳號的資料。",
+        "success": "資料已成功從 {{from}} 轉移到 {{to}}",
+        "fail": "資料轉移失敗: {{error}}",
+        "same_account": "來源和目標帳號不能相同。",
+        "source_data_missing": "找不到來源帳號 {{patient}} 的資料。"
+      },
+      "signUp": {
+        "acct_exists": "此病患帳號名稱已被使用，請選擇其他名稱。",
+        "success": "病患帳號 {{patient}} 註冊成功。",
+        "fail": "註冊失敗: {{error}}",
+        "error": "註冊時發生錯誤: {{error}}"
+      },
+      "qrCode": {
+        "patient_info_missing": "找不到病患 {{patient}} 的登入資訊",
+        "url_missing": "網頁 URL 未設定，無法生成 QR Code。",
+        "generate_error": "產生 QR Code 時發生錯誤: {{error}}",
+        "canvas_missing": "找不到 QR Code 圖片。",
+        "clipboard_unsupported": "您的瀏覽器不支援或未啟用剪貼簿複製圖片功能。",
+        "copy_success": "QR Code 圖片已複製到剪貼簿。",
+        "copy_fail": "複製 QR Code 失敗。請嘗試在圖片上按右鍵 -> 複製圖片。",
+        "print_window_error": "無法開啟列印視窗，請檢查您的彈出視窗攔截設定。",
+        "print_prepare_error": "準備列印 QR Code 時發生錯誤: {{error}}"
+      }
+    },
+    "confirms": {
+      "logout": "請確認是否要登出？",
+      "remove_monitor": "確定要將 {{patient}} 從監測列表中移除嗎？\n(注意：這不會刪除病患資料，僅停止在此畫面監測)",
+      "delete_patient": "！！！警告！！！\n確定要將病患 {{patient}} 完全刪除嗎？\n這將清除該病患的所有紀錄且無法復原！\n\n如果您只是想暫時停止監測，請使用「移除監測」功能。",
+      "clear_data": "確定要清除 {{patient}} 的所有飲食紀錄嗎？\n(限制設定不會被清除)\n此操作無法還原！",
+      "transfer_data": "確定要將 {{from}} 的所有飲食紀錄資料轉移到 {{to}} 嗎?\n\n來源 ({{from}}) 的紀錄將會被清除。\n限制設定不會轉移。\n\n此操作無法復原！",
+      "remove_record": "請確認是否移除這筆資料:\n床號: {{patient}}\n日期: {{date}}\n時間: {{time}}\n進食: {{food}}\n喝水: {{water}}\n排尿: {{urination}}\n排便: {{defecation}}"
+    }
+  }
+}

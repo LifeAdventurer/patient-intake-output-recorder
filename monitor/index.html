@@ -51,14 +51,16 @@
       <template v-if="!authenticated">
         <div class="row mt-4">
           <div class="col text-center">
-            <h1>護理站數據監測</h1>
+            <h1>{{ curLangText?.app_title }}</h1>
           </div>
         </div>
         <div class="row justify-content-center mt-4">
           <div class="col-md-6 col-lg-5 col-xl-4">
             <div class="card shadow-sm">
               <div class="card-body p-4">
-                <h5 class="card-title text-center mb-4">管理員登入</h5>
+                <h5 class="card-title text-center mb-4">
+                  {{ curLangText?.login_view?.title }}
+                </h5>
                 <div class="input-group mb-3">
                   <span class="input-group-text" id="account-addon"
                     ><i class="fas fa-user"></i
@@ -66,8 +68,8 @@
                   <input
                     type="text"
                     class="form-control"
-                    placeholder="帳號"
-                    aria-label="帳號"
+                    :placeholder="curLangText?.account"
+                    :aria-label="curLangText?.account"
                     aria-describedby="account-addon"
                     v-model.trim="account"
                   />
@@ -79,8 +81,8 @@
                   <input
                     :type="showPassword ? 'text' : 'password'"
                     class="form-control"
-                    placeholder="密碼"
-                    aria-label="密碼"
+                    :placeholder="curLangText?.password"
+                    :aria-label="curLangText?.password"
                     aria-describedby="password-addon"
                     v-model="password"
                     @keyup.enter="authenticate"
@@ -89,7 +91,7 @@
                     class="btn btn-light border"
                     type="button"
                     @click="togglePasswordVisibility"
-                    title="顯示/隱藏密碼"
+                    :title="showPassword ? curLangText?.hide_password: curLangText?.show_password"
                   >
                     <i
                       class="fa-solid"
@@ -104,7 +106,8 @@
                     @click="authenticate"
                     :disabled="!account || !password"
                   >
-                    <i class="fas fa-sign-in-alt me-2"></i>登入
+                    <i class="fas fa-sign-in-alt me-2"></i>{{ curLangText?.login
+                    }}
                   </button>
                 </div>
               </div>
@@ -133,7 +136,7 @@
                 type="search"
                 class="form-control"
                 v-model="searchQuery"
-                placeholder="依病床號搜尋..."
+                :placeholder="curLangText?.search_placeholder"
                 aria-label="Search patient"
               />
             </div>
@@ -146,24 +149,25 @@
               class="btn btn-sm btn-outline-primary"
               data-bs-toggle="modal"
               data-bs-target="#manageModal"
-              title="管理病患"
+              :title="curLangText?.modals?.manage?.title"
             >
-              <i class="fas fa-users-cog me-1"></i> 管理
+              <i class="fas fa-users-cog me-1"></i> {{ curLangText?.manage }}
             </button>
             <button
               class="btn btn-sm btn-outline-success"
               data-bs-toggle="modal"
               data-bs-target="#signUpModal"
-              title="註冊新病患"
+              :title="curLangText?.modals?.signup?.title"
             >
-              <i class="fas fa-user-plus me-1"></i> 註冊
+              <i class="fas fa-user-plus me-1"></i> {{ curLangText?.register }}
             </button>
             <button
               class="btn btn-sm btn-outline-danger"
               @click="confirmLogout"
-              title="登出"
+              :title="curLangText?.logout"
             >
-              <i class="fas fa-sign-out-alt me-1"></i> 登出 {{ account }}
+              <i class="fas fa-sign-out-alt me-1"></i> {{ curLangText?.logout }}
+              {{ account }}
             </button>
           </div>
 
@@ -225,7 +229,7 @@
                             <label
                               class="form-check-label small"
                               :for="`food-checkbox-${patientAccount}`"
-                              >吃</label
+                              >{{ curLangText?.food }}</label
                             >
                           </div>
                           <div class="form-check form-check-inline mb-0">
@@ -238,7 +242,7 @@
                             <label
                               class="form-check-label small"
                               :for="`water-checkbox-${patientAccount}`"
-                              >水</label
+                              >{{ curLangText?.water }}</label
                             >
                           </div>
                         </div>
@@ -249,18 +253,16 @@
                           min="0"
                           step="any"
                           class="form-control form-control-sm border-primary"
-                          placeholder="限制量 (g/ml)"
-                          aria-label="飲食限制量"
+                          placeholder=" (g/ml)"
                           required
                         />
                       </template>
                       <input
                         v-else
-                        :value="restrictionText[patientAccount] || '無限制'"
+                        :value="restrictionText[patientAccount] || curLangText?.no_limit_set"
                         type="text"
                         class="form-control form-control-sm text-center"
                         :class="{'bg-warning bg-opacity-25': restrictionText[patientAccount] }"
-                        aria-label="目前飲食限制"
                         readonly
                       />
                       <button
@@ -276,45 +278,59 @@
                   </div>
 
                   <div class="mb-3">
-                    <h6 class="text-muted small mb-1">今日總計</h6>
+                    <h6 class="text-muted small mb-1">
+                      {{ curLangText?.today_summary }}
+                    </h6>
                     <div
                       v-if="patientRecords[patientAccount][currentDateYYYY_M_D]"
                       class="border rounded p-2 bg-light"
                     >
                       <div class="row gx-2 text-center small">
-                        <div class="col" title="進食總量">
+                        <div
+                          class="col"
+                          :title="curLangText?.food + curLangText?.sum"
+                        >
                           <span
                             :class="getFoodSumColor(patientAccount) === 'red' ? 'text-danger fw-bold' : ''"
                           >
                             <i class="fas fa-utensils me-1"></i> {{
                             patientRecords[patientAccount][currentDateYYYY_M_D].foodSum
-                            ?? 0 }}g
+                            ?? 0 }} {{ curLangText?.unit_g }}
                           </span>
                         </div>
-                        <div class="col border-start" title="飲水總量">
+                        <div
+                          class="col border-start"
+                          :title="curLangText?.water + curLangText?.sum"
+                        >
                           <span
                             :class="getWaterSumColor(patientAccount) === 'red' ? 'text-danger fw-bold' : ''"
                           >
                             <i class="fas fa-glass-water me-1"></i> {{
                             patientRecords[patientAccount][currentDateYYYY_M_D].waterSum
-                            ?? 0 }}ml
+                            ?? 0 }} {{ curLangText?.unit_ml }}
                           </span>
                         </div>
-                        <div class="col border-start" title="排尿總量">
+                        <div
+                          class="col border-start"
+                          :title="curLangText?.urine + curLangText?.sum"
+                        >
                           <i class="fas fa-toilet me-1"></i> {{
                           patientRecords[patientAccount][currentDateYYYY_M_D].urinationSum
-                          ?? 0 }}ml
+                          ?? 0 }} {{ curLangText?.unit_ml }}
                         </div>
-                        <div class="col border-start" title="排便次數">
+                        <div
+                          class="col border-start"
+                          :title="curLangText?.defecate + curLangText?.sum"
+                        >
                           <i class="fas fa-poop me-1"></i> {{
                           patientRecords[patientAccount][currentDateYYYY_M_D].defecationSum
-                          ?? 0 }}次
+                          ?? 0 }} {{ curLangText?.unit_times }}
                         </div>
                       </div>
                     </div>
 
                     <div v-else class="text-center text-muted small p-2">
-                      (今日尚無紀錄)
+                      ({{ curLangText?.no_records_yet_for_today }})
                     </div>
                   </div>
 
@@ -335,7 +351,9 @@
                           aria-expanded="false"
                           :aria-controls="`collapse-all-${patientAccount}`"
                         >
-                          <span class="fw-bold me-auto">所有紀錄</span>
+                          <span class="fw-bold me-auto"
+                            >{{ curLangText?.all_records }}</span
+                          >
                           <small class="text-muted">
                             {{ getFirstAndLastDates(patientAccount) }}
                           </small>
@@ -382,14 +400,17 @@
                                       </span>
                                       <span
                                         class="fw-bold me-2"
-                                        title="當日體重"
+                                        :title="curLangText?.weight"
                                       >
                                         <i class="fas fa-weight-scale me-1"></i>
-                                        {{ dailyRecord.weight === 0 ? '未測量' :
-                                        `${dailyRecord.weight} kg` }}
+                                        {{ dailyRecord.weight === 0 ?
+                                        curLangText?.not_measured :
+                                        `${dailyRecord.weight}
+                                        ${curLangText?.unit_kg}` }}
                                       </span>
                                       <span class="fw-bold">
-                                        {{ dailyRecord.count ?? 0 }}筆紀錄
+                                        {{ dailyRecord.count ?? 0 }} {{
+                                        curLangText?.record_count_unit }}
                                       </span>
                                     </div>
                                   </button>
@@ -408,35 +429,37 @@
                                       >
                                         <thead class="table-light">
                                           <tr class="text-center">
-                                            <th>時間</th>
+                                            <th>
+                                              {{ curLangText?.timestamp }}
+                                            </th>
                                             <th>
                                               <i
                                                 class="fas fa-utensils"
-                                                title="進食 (g)"
+                                                :title="curLangText?.food"
                                               ></i>
                                             </th>
                                             <th>
                                               <i
                                                 class="fas fa-glass-water"
-                                                title="喝水 (ml)"
+                                                :title="curLangText?.water"
                                               ></i>
                                             </th>
                                             <th>
                                               <i
                                                 class="fas fa-toilet"
-                                                title="排尿 (ml)"
+                                                :title="curLangText?.urine"
                                               ></i>
                                             </th>
                                             <th>
                                               <i
                                                 class="fas fa-poop"
-                                                title="排便 (次)"
+                                                :title="curLangText?.defecate"
                                               ></i>
                                             </th>
                                             <th>
                                               <i
                                                 class="fas fa-edit"
-                                                title="操作"
+                                                :title="curLangText?.actions"
                                               ></i>
                                             </th>
                                           </tr>
@@ -491,7 +514,7 @@
                                           <tr
                                             class="table-light text-center fw-bold"
                                           >
-                                            <td>總計</td>
+                                            <td>{{ curLangText?.sum }}</td>
                                             <td>
                                               {{ dailyRecord.foodSum ?? 0 }}
                                             </td>
@@ -517,7 +540,7 @@
                             </template>
                             <template v-else>
                               <div class="text-center p-3 text-muted">
-                                (無歷史紀錄)
+                                ({{ curLangText?.no_historical_records }})
                               </div>
                             </template>
                           </div>
@@ -537,7 +560,7 @@
           id="scrollToTopBtn"
           @click="scrollToTop"
           v-show="showScrollButton"
-          title="回到頂部"
+          :title="curLangText?.scroll_to_top"
         >
           <i class="fa-solid fa-arrow-up"></i>
         </button>
@@ -555,13 +578,14 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="signUpModalLabel">
-                  <i class="fas fa-user-plus me-2"></i>註冊新病患帳號
+                  <i class="fas fa-user-plus me-2"></i>{{
+                  curLangText?.modals?.signUp?.title }}
                 </h5>
                 <button
                   type="button"
                   class="btn-close"
                   data-bs-dismiss="modal"
-                  aria-label="關閉"
+                  :aria-label="curLangText?.close"
                   @click="resetSignUpForm()"
                 ></button>
               </div>
@@ -582,7 +606,7 @@
                 >
                   <div class="mb-3">
                     <label for="signUpPatientAccount" class="form-label"
-                      >病患帳號</label
+                      >{{ curLangText?.modals?.signUp?.account_label }}</label
                     >
                     <input
                       type="text"
@@ -594,15 +618,16 @@
                       aria-describedby="accountHelpBlock"
                     />
                     <div id="accountHelpBlock" class="form-text small">
-                      建議使用容易識別的唯一代號，例如病床號。
+                      {{ curLangText?.modals?.signUp?.account_help }}
                     </div>
                     <div class="invalid-feedback">
-                      請輸入有效的帳號 (不能只包含空白字元)。
+                      {{ curLangText?.modals?.signUp?.validation_invalid_account
+                      }}
                     </div>
                   </div>
                   <div class="mb-3">
                     <label for="signUpPatientPassword" class="form-label">
-                      病患密碼
+                      {{ curLangText?.modals?.signUp?.password_label }}
                     </label>
                     <input
                       type="text"
@@ -613,9 +638,13 @@
                       aria-describedby="passwordHelpBlock"
                     />
                     <div id="passwordHelpBlock" class="form-text small">
-                      此密碼供病患或家屬透過 QR Code 登入記錄，請妥善告知。
+                      {{ curLangText?.modals?.signUp?.password_help }}
                     </div>
-                    <div class="invalid-feedback">請輸入密碼。</div>
+                    <div class="invalid-feedback">
+                      {{
+                      curLangText?.modals?.signUp?.validation_password_required
+                      }}
+                    </div>
                   </div>
                   <div class="mb-3">
                     <div class="form-check">
@@ -626,7 +655,7 @@
                         v-model="autoAddToMonitor"
                       />
                       <label class="form-check-label" for="autoAddToMonitor">
-                        自動將註冊的病患加入監控名單
+                        {{ curLangText?.modals?.signUp?.auto_add_label }}
                       </label>
                     </div>
                     <div class="form-check mb-2">
@@ -637,7 +666,7 @@
                         v-model="stayOpenAfterSignup"
                       />
                       <label class="form-check-label" for="stayOpenAfterSignup">
-                        註冊成功後保持此視窗開啟 (方便連續註冊)
+                        {{ curLangText?.modals?.signUp?.stay_open_label }}
                       </label>
                     </div>
                   </div>
@@ -648,10 +677,11 @@
                       data-bs-dismiss="modal"
                       @click="resetSignUpForm()"
                     >
-                      取消
+                      {{ curLangText?.cancel }}
                     </button>
                     <button type="submit" class="btn btn-success">
-                      <i class="fas fa-check me-1"></i>註冊
+                      <i class="fas fa-check me-1"></i> {{
+                      curLangText?.modals?.signUp?.register_button }}
                     </button>
                   </div>
                 </form>
@@ -673,19 +703,21 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="manageModalLabel">
-                  <i class="fas fa-users-cog me-2"></i>管理病患
+                  <i class="fas fa-users-cog me-2"></i>{{
+                  curLangText?.modals?.manage?.title }}
                 </h5>
                 <button
                   type="button"
                   class="btn-close"
                   data-bs-dismiss="modal"
-                  aria-label="關閉"
+                  :aria-label="curLangText?.close"
                 ></button>
               </div>
               <div class="modal-body">
                 <div class="mb-4">
                   <h6 class="mb-2 text-muted">
-                    <i class="fas fa-eye-slash me-1"></i> 未監測病患
+                    <i class="fas fa-eye-slash me-1"></i> {{
+                    curLangText?.modals?.manage?.unmonitored_header }}
                   </h6>
                   <div
                     class="list-group list-group-flush"
@@ -701,21 +733,23 @@
                         class="btn btn-success btn-sm"
                         @click="addPatientToMonitor(patient)"
                       >
-                        <i class="fas fa-plus me-1"></i> 加入監測
+                        <i class="fas fa-plus me-1"></i> {{
+                        curLangText?.modals?.manage?.add_monitor_button }}
                       </button>
                     </div>
                     <div
                       v-if="!unmonitoredPatients || unmonitoredPatients.length === 0"
                       class="list-group-item text-center text-muted"
                     >
-                      (無未監測病患)
+                      ({{ curLangText?.modals?.manage?.empty_unmonitored }})
                     </div>
                   </div>
                 </div>
 
                 <div>
                   <h6 class="mb-2 text-muted">
-                    <i class="fas fa-eye me-1"></i> 監測中病患
+                    <i class="fas fa-eye me-1"></i> {{
+                    curLangText?.modals?.manage?.monitored_header }}
                   </h6>
                   <div
                     class="list-group list-group-flush"
@@ -735,25 +769,29 @@
                           class="btn btn-outline-primary"
                           @click="openTransferModal(patient)"
                         >
-                          <i class="fas fa-exchange-alt me-1"></i> 轉移資料
+                          <i class="fas fa-exchange-alt me-1"></i> {{
+                          curLangText?.modals?.transfer?.title }}
                         </button>
                         <button
                           class="btn btn-outline-secondary"
                           @click="clearPatientData(patient)"
                         >
-                          <i class="fas fa-eraser me-1"></i> 清除紀錄
+                          <i class="fas fa-eraser me-1"></i> {{
+                          curLangText?.modals?.manage?.clear_button }}
                         </button>
                         <button
                           class="btn btn-outline-warning"
                           @click="removePatientFromMonitor(patient)"
                         >
-                          <i class="fas fa-minus-circle me-1"></i> 取消監測
+                          <i class="fas fa-minus-circle me-1"></i> {{
+                          curLangText?.modals?.manage?.remove_monitor_button }}
                         </button>
                         <button
                           class="btn btn-outline-danger"
                           @click="deletePatient(patient)"
                         >
-                          <i class="fas fa-user-times me-1"></i> 出院 (刪除)
+                          <i class="fas fa-user-times me-1"></i> {{
+                          curLangText?.modals?.manage?.delete_button }}
                         </button>
                       </div>
                     </div>
@@ -761,7 +799,7 @@
                       v-if="!monitoredPatientAccounts || monitoredPatientAccounts.length === 0"
                       class="list-group-item text-center text-muted"
                     >
-                      (無監測中病患)
+                      ({{ curLangText?.modals?.manage?.empty_monitored }})
                     </div>
                   </div>
                 </div>
@@ -782,31 +820,35 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="qrCodeModalLabel">
-                  QR Code for {{ qrCodePatient }}
+                  {{
+                  curLangText?.modals?.qrCode?.title.replace("\{\{patient\}\}",
+                  qrCodePatient) }}
                 </h5>
                 <button
                   type="button"
                   class="btn-close"
                   data-bs-dismiss="modal"
-                  aria-label="關閉"
+                  :aria-label="curLangText?.close"
                 ></button>
               </div>
               <div class="modal-body text-center">
-                <p class="text-muted">請病患或家屬掃描此 QR Code 登入記錄：</p>
+                <p class="text-muted">
+                  {{ curLangText?.modals?.qrCode?.scan_prompt }}
+                </p>
                 <div
                   class="d-flex justify-content-center mb-3"
                   id="qrCodeContainer"
                 ></div>
                 <!-- <div class="alert alert-info alert-sm small"> -->
                 <!--   <p class="mb-1"> -->
-                <!--     <strong>登入網址:</strong> -->
+                <!--     <strong>{{ curLangText?.modals?.qrCode?.login_url_label }}</strong> -->
                 <!--     <a :href="webUrl + '/patient/'" target="_blank" -->
                 <!--       >{{ webUrl }}/patient/</a -->
                 <!--     > -->
                 <!--   </p> -->
-                <!--   <p class="mb-1"><strong>帳號:</strong> {{ qrCodePatient }}</p> -->
+                <!--   <p class="mb-1"><strong>{{ curLangText?.modals?.qrCode?.account_label }}</strong> {{ qrCodePatient }}</p> -->
                 <!--   <p class="mb-0"> -->
-                <!--     <strong>密碼:</strong> {{ qrCodePatientPassword }} -->
+                <!--     <strong>{{ curLangText?.modals?.qrCode?.password_label }}</strong> {{ qrCodePatientPassword }} -->
                 <!--   </p> -->
                 <!-- </div> -->
               </div>
@@ -839,7 +881,8 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="transferModalLabel">
-                  <i class="fas fa-exchange-alt me-2"></i>轉移病患資料
+                  <i class="fas fa-exchange-alt me-2"></i>{{
+                  curLangText?.modals?.transfer?.title }}
                 </h5>
                 <button
                   type="button"
@@ -848,13 +891,12 @@
                 ></button>
               </div>
               <div class="modal-body">
-                <p>
-                  請輸入要將
-                  <strong>{{ transferFrom }}</strong> 的資料轉移到哪個帳號：
-                </p>
+                <p
+                  v-html="curLangText?.modals?.transfer?.prompt.replace('{{from}}', transferFrom)"
+                ></p>
                 <div class="mb-3">
                   <label for="transferToAccount" class="form-label"
-                    >目標病患帳號 (監測中)</label
+                    >{{ curLangText?.modals?.transfer?.target_label }}</label
                   >
                   <input
                     type="text"
@@ -862,7 +904,7 @@
                     class="form-control"
                     id="transferToAccount"
                     v-model.trim="transferTo"
-                    placeholder="輸入目標病患帳號"
+                    :placeholder="curLangText?.modals?.transfer?.target_placeholder"
                     required
                   />
                   <datalist id="monitored-patients-list">
@@ -876,10 +918,10 @@
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">
-                  取消
+                  {{ curLangText?.cancel }}
                 </button>
                 <button class="btn btn-primary" @click="transferPatientData">
-                  確認轉移
+                  {{ curLangText?.modals?.transfer?.confirm_button }}
                 </button>
               </div>
             </div>
@@ -899,7 +941,8 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="confirmModalLabel">
-                  <i class="fas fa-question-circle me-2 text-warning"></i>請確認
+                  <i class="fas fa-question-circle me-2 text-warning"></i> {{
+                  curLangText?.confirm_action }}
                 </h5>
                 <button
                   type="button"
@@ -918,7 +961,7 @@
                   data-bs-dismiss="modal"
                   @click="handleConfirm(false)"
                 >
-                  取消
+                  {{ curLangText?.cancel }}
                 </button>
                 <button
                   type="button"
@@ -926,7 +969,7 @@
                   data-bs-dismiss="modal"
                   @click="handleConfirm(true)"
                 >
-                  確認
+                  {{ curLangText?.confirm }}
                 </button>
               </div>
             </div>
@@ -944,7 +987,7 @@
               © 2023–2025 LifeAdventurer | All rights reserved
             </div>
             <div class="col-md-3 text-muted small">
-              Code licensed
+              {{ curLangText?.login_view?.footer_license }}
               <a
                 href="https://github.com/LifeAdventurer/patient-intake-output-recorder/blob/main/LICENSE"
                 target="_blank"
@@ -953,7 +996,8 @@
               >
             </div>
             <div class="col-md-2 text-muted small">
-              Version: <strong>v1.2.0</strong>
+              {{ curLangText?.login_view?.footer_version }}:
+              <strong>v1.2.0</strong>
             </div>
           </div>
         </div>
