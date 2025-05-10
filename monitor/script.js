@@ -75,7 +75,7 @@ Vue.createApp({
       },
 
       // --- i18n State ---
-      selectedLanguage: "zh-TW", // Default language
+      selectedLanguage: "en", // Default language
       supportedLanguages: [], // Loaded from supported_languages.json
       curLangTexts: {}, // Loaded from lang_texts.json
 
@@ -93,9 +93,9 @@ Vue.createApp({
     curLangText() {
       return (
         this.curLangTexts[this.selectedLanguage] ||
-        this.curLangTexts["zh-TW"] ||
+        this.curLangTexts["en"] ||
         {}
-      ); // Fallback to zh-TW or empty object
+      ); // Fallback to English or empty object
     },
 
     // Returns patient records with date keys reversed for display (newest first)
@@ -211,7 +211,7 @@ Vue.createApp({
         this.webUrl = config.webUrl;
         this.selectedLanguage = config.defaultLanguage;
         if (this.supportedLanguages.includes(this.selectedLanguage)) {
-          this.selectedLanguage = "zh-TW";
+          this.selectedLanguage = "en";
         }
         console.log("Selected language set to:", this.selectedLanguage);
         console.log("Configuration loaded.");

@@ -1,4 +1,197 @@
 {
+  "en": {
+    "app_title": "Nursing Station Monitoring",
+    "loading": "Loading...",
+    "error": "Error",
+    "actions": "Actions",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm_action": "Confirm Action",
+    "search_placeholder": "Search by Bed No...",
+    "manage": "Manage",
+    "register": "Register",
+    "logout": "Logout",
+    "account": "Account",
+    "password": "Password",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
+    "login": "Login",
+    "edit": "Edit",
+    "save": "Save",
+    "remove": "Remove",
+    "all_records": "All Records",
+    "no_records": "No Records",
+    "weight": "Weight",
+    "not_measured": "N/A",
+    "record_count_unit": "records",
+    "timestamp": "Time",
+    "food_intake": "Food",
+    "water_consumption": "Water",
+    "urination": "Urination",
+    "defecation": "Defecation",
+    "sum": "Total",
+    "unit_g": "g",
+    "unit_ml": "ml",
+    "unit_times": "times",
+    "unit_kg": "kg",
+    "today_summary": "Today's Summary",
+    "no_records_yet_for_today": "No records yet for today",
+    "limit": "Limit",
+    "limit_food": "Food",
+    "limit_water": "Water",
+    "limit_plus": "+",
+    "limit_less_than": "<",
+    "limit_unit": "g/ml",
+    "no_limit_set": "No Limit Set",
+    "edit_restriction": "Edit Limit",
+    "save_restriction": "Save Limit",
+    "show_qr_code": "Show QR Code",
+    "scroll_to_top": "Scroll to Top",
+    "login_view": {
+      "title": "Admin Login",
+      "footer_copyright": "Copyright © 2023-{{year}} LifeAdventurer | All Rights Reserved.",
+      "footer_license": "Code licensed",
+      "footer_version": "Version"
+    },
+    "modals": {
+      "signUp": {
+        "title": "Register New Patient Account",
+        "account_label": "Patient Account (e.g., Bed No.)",
+        "account_help": "Use a unique identifier, like the bed number.",
+        "password_label": "Patient Password",
+        "password_help": "Password for patient/family login via QR Code.",
+        "stay_open_label": "Keep this window open after successful registration",
+        "auto_add_label": "Automatically add registered patient to monitoring list",
+        "register_button": "Register",
+        "validation_invalid_account": "Please enter a valid account name (cannot be only whitespace).",
+        "validation_password_required": "Please enter a password.",
+        "validation_fill_required": "Please fill in all required fields."
+      },
+      "manage": {
+        "title": "Manage Patients",
+        "unmonitored_header": "Unmonitored Patients",
+        "monitored_header": "Monitored Patients",
+        "add_monitor_button": "Add Monitor",
+        "add_monitor_title": "Add this patient to the monitoring list",
+        "transfer_button": "Transfer Data",
+        "transfer_title": "Transfer this patient's data to another monitored patient",
+        "clear_button": "Clear Records",
+        "clear_title": "Clear all intake/output records for this patient (limits remain)",
+        "remove_monitor_button": "Remove Monitor",
+        "remove_monitor_title": "Remove this patient from the monitoring list (data is kept)",
+        "delete_button": "Discharge (Delete)",
+        "delete_title": "Completely delete this patient and all their data (irreversible!)",
+        "empty_unmonitored": "(No unmonitored patients)",
+        "empty_monitored": "(No monitored patients)"
+      },
+      "qrCode": {
+        "title": "Patient {{patient}} Login Info",
+        "scan_prompt": "Scan this QR Code to log in and record:",
+        "login_url_label": "Login URL:",
+        "account_label": "Account:",
+        "password_label": "Password:",
+        "copy_image_button": "Copy Image",
+        "copy_image_title": "Copy QR Code image",
+        "print_button": "Print",
+        "print_title": "Print QR Code and login info"
+      },
+      "confirm": {
+        "title": "Confirm Action"
+      },
+      "transfer": {
+        "title": "Transfer Patient Data",
+        "prompt": "Transfer all intake/output records from patient <strong class=\"text-primary\">{{from}}</strong> to:",
+        "target_label": "Target Patient Account (Monitored)",
+        "target_placeholder": "Enter target patient account",
+        "warning": "Note: Target account's existing intake/output records will be overwritten by source data, and source account's records will be cleared. Restrictions are not transferred. This action cannot be undone.",
+        "confirm_button": "Confirm Transfer"
+      }
+    },
+    "alerts": {
+      "login": {
+        "acct_not_exist": "Account does not exist",
+        "auth_fail_password": "Incorrect password",
+        "invalid_acct_type": "This account does not have management permissions",
+        "error": "Login error: {{error}}",
+        "missing_credentials": "Please enter account and password."
+      },
+      "config": {
+        "load_error": "Failed to load application settings, please try again later.",
+        "events_load_error": "Failed to load API event settings, please try again later."
+      },
+      "sync": {
+        "error": "Data synchronization failed: {{error}}",
+        "invalid_data": "Incorrect data format received from server."
+      },
+      "update": {
+        "error": "Failed to update records for {{patient}}: {{error}}",
+        "network_error": "Network error while updating records for {{patient}}: {{error}}"
+      },
+      "manage": {
+        "fetch_unmonitored_error": "Failed to fetch unmonitored patients list: {{error}}",
+        "add_success": "Successfully added {{patient}} to monitoring list",
+        "add_fail": "Failed to add {{patient}} to monitoring list: {{error}}",
+        "add_error": "Error adding {{patient}} to monitoring list: {{error}}",
+        "remove_success": "Successfully removed {{patient}} from monitoring list",
+        "remove_fail": "Failed to remove {{patient}} from monitoring list: {{error}}",
+        "remove_error": "Error removing {{patient}} from monitoring: {{error}}",
+        "delete_success": "Successfully deleted patient {{patient}} and all their data",
+        "delete_fail": "Failed to delete patient {{patient}}: {{error}}",
+        "delete_error": "Error deleting patient {{patient}}: {{error}}",
+        "clear_success": "Successfully cleared all intake/output records for {{patient}}",
+        "clear_error": "Error clearing data for {{patient}}",
+        "patient_info_missing": "Could not find authentication information for this patient."
+      },
+      "restriction": {
+        "check_option_and_number": "Please check an option and enter a valid number.",
+        "check_option": "Please check an option.",
+        "enter_number": "Please enter a valid number.",
+        "enter_positive_integer": "Please enter a valid positive integer.",
+        "save_other_first": "Please save or cancel the other record being edited first.",
+        "save_restriction_first": "Please save or cancel the restriction being edited first."
+      },
+      "record": {
+        "remove_success": "Record removed successfully.",
+        "remove_error": "Error removing record: {{error}}"
+      },
+      "transfer": {
+        "target_required": "Please enter a target account.",
+        "target_not_exist": "Target account does not exist.",
+        "target_not_monitored": "Target account is not monitored. Please add it to the monitoring list before transferring.",
+        "target_has_data": "Target account already has intake/output data and cannot be overwritten. Please clear the target's data first.",
+        "success": "Data successfully transferred from {{from}} to {{to}}",
+        "fail": "Data transfer failed: {{error}}",
+        "same_account": "Source and target accounts cannot be the same.",
+        "source_data_missing": "Could not find data for source account {{patient}}."
+      },
+      "signUp": {
+        "acct_exists": "This patient account name is already in use. Please choose another.",
+        "success": "Patient account {{patient}} registered successfully.",
+        "fail": "Registration failed: {{error}}",
+        "error": "Error during registration: {{error}}"
+      },
+      "qrCode": {
+        "patient_info_missing": "Could not find login information for patient {{patient}}",
+        "url_missing": "Web URL is not configured, cannot generate QR Code.",
+        "generate_error": "Error generating QR Code: {{error}}",
+        "canvas_missing": "Could not find QR Code image.",
+        "clipboard_unsupported": "Your browser does not support copying images to the clipboard.",
+        "copy_success": "QR Code image copied to clipboard.",
+        "copy_fail": "Failed to copy QR Code image. Please try right-clicking -> Copy Image.",
+        "print_window_error": "Could not open print window. Please check your pop-up blocker settings.",
+        "print_prepare_error": "Error preparing QR Code for printing: {{error}}"
+      }
+    },
+    "confirms": {
+      "logout": "Confirm logout?",
+      "remove_monitor": "Are you sure you want to remove {{patient}} from the monitoring list?\n(Note: This does not delete patient data, it only stops monitoring on this screen)",
+      "delete_patient": "!!! WARNING !!!\nAre you sure you want to completely delete patient {{patient}}?\nThis will erase all records for this patient and cannot be undone!\n\nIf you only want to temporarily stop monitoring, use the 'Remove Monitor' function.",
+      "clear_data": "Are you sure you want to clear all intake/output records for {{patient}}?\n(Restriction settings will not be cleared)\nThis action cannot be undone!",
+      "transfer_data": "Are you sure you want to transfer all intake/output records from {{from}} to {{to}}?\n\nSource's ({{from}}) records will be cleared.\nRestriction settings will not be transferred.\n\nThis action cannot be undone!",
+      "remove_record": "Confirm removal of this record:\nBed No: {{patient}}\nDate: {{date}}\nTime: {{time}}\nFood: {{food}}\nWater: {{water}}\nUrination: {{urination}}\nDefecation: {{defecation}}"
+    }
+  },
   "zh-TW": {
     "app_title": "護理站數據監測",
     "loading": "載入中...",
