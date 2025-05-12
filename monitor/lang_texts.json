@@ -57,7 +57,7 @@
     "modals": {
       "signUp": {
         "title": "Register New Patient Account",
-        "account_label": "Patient Account (e.g., Bed No.)",
+        "account_label": "Patient Account",
         "account_help": "Use a unique identifier, like the bed number.",
         "password_label": "Patient Password",
         "password_help": "Password for patient/family login via QR Code.",
@@ -82,8 +82,8 @@
         "remove_monitor_title": "Remove this patient from the monitoring list (data is kept)",
         "delete_button": "Discharge (Delete)",
         "delete_title": "Completely delete this patient and all their data (irreversible!)",
-        "empty_unmonitored": "(No unmonitored patients)",
-        "empty_monitored": "(No monitored patients)"
+        "empty_unmonitored": "No unmonitored patients",
+        "empty_monitored": "No monitored patients"
       },
       "qrCode": {
         "title": "Patient {{patient}} Login Info",
@@ -187,7 +187,7 @@
       "logout": "Confirm logout?",
       "remove_monitor": "Are you sure you want to remove {{patient}} from the monitoring list?\n(Note: This does not delete patient data, it only stops monitoring on this screen)",
       "delete_patient": "!!! WARNING !!!\nAre you sure you want to completely delete patient {{patient}}?\nThis will erase all records for this patient and cannot be undone!\n\nIf you only want to temporarily stop monitoring, use the 'Remove Monitor' function.",
-      "clear_data": "Are you sure you want to clear all intake/output records for {{patient}}?\n(Restriction settings will not be cleared)\nThis action cannot be undone!",
+      "clear_data": "Are you sure you want to clear all intake/output records for {{patient}}?\nThis action cannot be undone!",
       "transfer_data": "Are you sure you want to transfer all intake/output records from {{from}} to {{to}}?\n\nSource's ({{from}}) records will be cleared.\nRestriction settings will not be transferred.\n\nThis action cannot be undone!",
       "remove_record": "Confirm removal of this record:\nBed No: {{patient}}\nDate: {{date}}\nTime: {{time}}\nFood: {{food}}\nWater: {{water}}\nUrination: {{urination}}\nDefecation: {{defecation}}"
     }
