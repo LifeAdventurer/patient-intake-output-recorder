@@ -65,9 +65,11 @@ def mocked_load_json_file(path):
     if path.endswith("config.json"):
         return {"token": TEST_TOKEN}
     elif path.endswith("data.json"):
-        return mocked_load_json_file.data
+        return getattr(mocked_load_json_file, "data", {})
     elif path.endswith("account_relations.json"):
-        return mocked_load_json_file.acct_rel
+        return getattr(
+            mocked_load_json_file, "acct_rel", {"monitor_accounts": {}}
+        )
     return {}
 
 
@@ -83,6 +85,7 @@ class TestAPIEndpoints(unittest.TestCase):
         db.ACCOUNTS_DB = TEST_DB
         db.create_table()
 
+        # Initialize mock data attributes
         mocked_load_json_file.data = {}
         mocked_load_json_file.acct_rel = {"monitor_accounts": {}}
 
@@ -290,7 +293,7 @@ class TestAPIEndpoints(unittest.TestCase):
                 "waterSum": 200,
                 "urinationSum": 1,
                 "defecationSum": 0,
-                "weight": 53.12,
+                "weight": "53.12 kg",
             },
         }
 
@@ -365,7 +368,7 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("Invalid record format", res.json()["message"])
         update_data[key]["foodSum"] = 100
 
-        update_data[key]["weight"] = 301
+        update_data[key]["weight"] = "301 kg"
         res = client.post(
             "/",
             json={
@@ -378,7 +381,7 @@ class TestAPIEndpoints(unittest.TestCase):
         )
         self.assertIn("Invalid record format", res.json()["message"])
 
-        update_data[key]["weight"] = -123
+        update_data[key]["weight"] = "-123 kg"
         res = client.post(
             "/",
             json={
@@ -403,7 +406,7 @@ class TestAPIEndpoints(unittest.TestCase):
             },
         )
         self.assertIn("Invalid record format", res.json()["message"])
-        update_data[key]["weight"] = 53.12
+        update_data[key]["weight"] = "53.12 kg"
 
         future_time = (
             datetime.datetime.now().replace(hour=23, minute=59)

@@ -54,7 +54,7 @@ class DailyRecord(BaseModel):
     waterSum: NonNegativeInt
     urinationSum: NonNegativeInt
     defecationSum: NonNegativeInt
-    weight: float
+    weight: str
 
     @model_validator(mode="after")
     def validate_all(self):
@@ -81,14 +81,23 @@ class DailyRecord(BaseModel):
                 f"recordDate is too far in the future: {self.recordDate}"
             )
 
-        if self.weight != 0:
-            if self.weight <= 0:
+        if self.weight != "NaN":
+            w = self.weight.split(" ")
+            if len(w) != 2:
+                raise ValueError(f"Invalid weight format: `{self.weight}`")
+            weight_val, kg = w
+
+            if kg != "kg":
+                raise ValueError(f"Expected 'kg' unit, got '{kg}'")
+
+            weight_val = float(weight_val)
+            if weight_val <= 0:
                 raise ValueError("weight must be a positive floating number")
 
             max_weight = limits.get("weight")
-            if self.weight > max_weight:
+            if weight_val > max_weight:
                 raise ValueError(
-                    f"weight {self.weight} exceeds max limit {max_weight}"
+                    f"weight {weight_val} exceeds max limit {max_weight}"
                 )
 
         return self
