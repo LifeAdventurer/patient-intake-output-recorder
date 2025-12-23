@@ -15,6 +15,7 @@ from constants import (
     CHANGE_USERNAME,
     CONFIG_JSON_PATH,
     DATA_JSON_PATH,
+    DELETE_DAILY_RECORD,
     DELETE_MONITOR,
     DELETE_MONITOR_SUCCESS,
     DELETE_PATIENT,
@@ -28,18 +29,35 @@ from constants import (
     INVALID_ACCT_TYPE,
     INVALID_EVENT,
     MISSING_PARAMETER,
+    NEW_DAILY_RECORD,
+    RECORD_DATA_CREATE_SUCCESS,
+    RECORD_DATA_DELETE_SUCCESS,
+    RECORD_DATA_UPDATE_SUCCESS,
+    RECORD_NOT_FOUND,
     REMOVE_PATIENT,
     REMOVE_PATIENT_SUCCESS,
-    SET_RESTRICTS,
+    SET_LIMITS_SUCCESS,
     SIGN_UP_MONITOR,
     SIGN_UP_PATIENT,
+    TRANSFER_PATIENT,
+    TRANSFER_PATIENT_NOT_EMPTY,
+    TRANSFER_PATIENT_SUCCESS,
+    UPDATE_DAILY_RECORD,
+    UPDATE_LIMIT,
     UPDATE_RECORD,
     UPDATE_RECORD_SUCCESS,
 )
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
-from validator import UpdateDataModel
+from validator import (
+    DailyRecord,
+    RecordItem,
+    UpdateDataModel,
+    parse_date_key,
+    parse_record_date,
+    parse_time,
+)
 
 app = FastAPI()
 app.add_middleware(
@@ -170,8 +188,9 @@ async def handle_request(request: Request):
         ADD_PATIENT,
         REMOVE_PATIENT,
         DELETE_PATIENT,
-        SET_RESTRICTS,
         SIGN_UP_PATIENT,
+        UPDATE_LIMIT,
+        TRANSFER_PATIENT,
     ]:
         if not has_parameters(post_request, ["account", "password"]):
             return {"message": MISSING_PARAMETER}
@@ -211,7 +230,7 @@ async def handle_request(request: Request):
                 "patient_records": patient_records,
             }
 
-        if event == FETCH_UNMONITORED_PATIENTS:
+        elif event == FETCH_UNMONITORED_PATIENTS:
             account_list = db.get_patient_accounts()
             account_relations = load_json_file(ACCT_REL_JSON_PATH)
             monitored_patients = set()
@@ -229,6 +248,45 @@ async def handle_request(request: Request):
                 "message": FETCH_UNMONITORED_PATIENTS_SUCCESS,
                 "unmonitored_patients": patient_accounts,
             }
+
+        elif event == TRANSFER_PATIENT:
+            if not has_parameters(post_request, ["patient_from", "patient_to"]):
+                return {"message": MISSING_PARAMETER}
+
+            patient_from = post_request["patient_from"]
+            patient_to = post_request["patient_to"]
+
+            account_type = db.get_account_type(patient_from)
+            if not account_type:
+                return {"message": ACCT_NOT_EXIST}
+
+            if account_type != db.AccountType.PATIENT:
+                return {"message": INVALID_ACCT_TYPE}
+
+            account_type = db.get_account_type(patient_to)
+            if not account_type:
+                return {"message": ACCT_NOT_EXIST}
+
+            if account_type != db.AccountType.PATIENT:
+                return {"message": INVALID_ACCT_TYPE}
+
+            data = load_json_file(DATA_JSON_PATH)
+
+            from_data = data[patient_from]
+            to_data = data[patient_to]
+            for key in to_data.keys():
+                if key not in [
+                    "isEditing",
+                    "limitAmount",
+                    "foodCheckboxChecked",
+                    "waterCheckboxChecked",
+                ]:
+                    return {"message": TRANSFER_PATIENT_NOT_EMPTY}
+
+            data[patient_from] = to_data
+            data[patient_to] = from_data
+
+            return {"message": TRANSFER_PATIENT_SUCCESS}
 
         if "patient" not in post_request:
             return {"message": MISSING_PARAMETER}
@@ -269,6 +327,47 @@ async def handle_request(request: Request):
             write_json_file(ACCT_REL_JSON_PATH, account_relations)
 
             return {"message": REMOVE_PATIENT_SUCCESS}
+
+        elif event == UPDATE_LIMIT:
+            if not has_parameters(
+                post_request,
+                [
+                    "isEditing",
+                    "limitAmount",
+                    "foodCheckboxChecked",
+                    "waterCheckboxChecked",
+                ],
+            ):
+                return {"message": MISSING_PARAMETER}
+            if db.get_account_type(monitor_account) != db.AccountType.MONITOR:
+                return {"message": INVALID_ACCT_TYPE}
+
+            data = load_json_file(DATA_JSON_PATH)
+            if patient not in data:
+                return {"message": ACCT_NOT_EXIST}
+
+            update_fields = {
+                k: v
+                for k, v in post_request.items()
+                if k
+                in [
+                    "isEditing",
+                    "limitAmount",
+                    "foodCheckboxChecked",
+                    "waterCheckboxChecked",
+                ]
+            }
+            original = data[patient]
+            simulated = {**original, **update_fields}
+
+            try:
+                UpdateDataModel.model_validate(simulated)
+            except ValidationError as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            data[patient].update(update_fields)
+            write_json_file(DATA_JSON_PATH, data)
+            return {"message": SET_LIMITS_SUCCESS}
 
         if "patient_password" not in post_request:
             return {"message": MISSING_PARAMETER}
@@ -312,12 +411,13 @@ async def handle_request(request: Request):
                 "message": DELETE_PATIENT_SUCCESS,
             }
 
-        if (
-            event == SET_RESTRICTS
-        ):  # Use `UPDATE_RECORD` until we have payload record template verification
-            return {"message": "WIP"}
-
-    elif event in [UPDATE_RECORD, FETCH_RECORD]:
+    elif event in [
+        UPDATE_RECORD,
+        FETCH_RECORD,
+        NEW_DAILY_RECORD,
+        UPDATE_DAILY_RECORD,
+        DELETE_DAILY_RECORD,
+    ]:
         if not has_parameters(post_request, ["account", "password", "patient"]):
             return {"message": MISSING_PARAMETER}
 
@@ -365,6 +465,218 @@ async def handle_request(request: Request):
                 }
             else:
                 return {"message": INVALID_ACCT_TYPE}
+
+        elif event == NEW_DAILY_RECORD:
+            if not has_parameters(
+                post_request,
+                [
+                    "key",
+                    "recordDate",
+                    "time",
+                    "food",
+                    "water",
+                    "urination",
+                    "defecation",
+                    "weight",
+                ],
+            ):
+                return {"message": MISSING_PARAMETER}
+
+            if db.get_account_type(patient_account) != db.AccountType.PATIENT:
+                return {"message": INVALID_ACCT_TYPE}
+
+            try:
+                parse_date_key(post_request["key"])
+                parse_record_date(post_request["recordDate"])
+                parse_time(post_request["time"])
+            except ValueError as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            try:
+                item = RecordItem.model_validate(
+                    {
+                        "time": post_request["time"],
+                        "food": post_request["food"],
+                        "water": post_request["water"],
+                        "urination": post_request["urination"],
+                        "defecation": post_request["defecation"],
+                    }
+                )
+
+                record_date = post_request["recordDate"]
+                key = post_request["key"]
+
+            except ValidationError as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            data = load_json_file(DATA_JSON_PATH)
+            if patient_account not in data:
+                data[patient_account] = {
+                    "isEditing": False,
+                    "limitAmount": "",
+                    "foodCheckboxChecked": False,
+                    "waterCheckboxChecked": False,
+                }
+
+            if key not in data[patient_account]:
+                try:
+                    daily_record = {
+                        "data": [item.model_dump()],
+                        "count": 1,
+                        "recordDate": record_date,
+                        "foodSum": item.food,
+                        "waterSum": item.water,
+                        "urinationSum": item.urination,
+                        "defecationSum": item.defecation,
+                        "weight": post_request["weight"],
+                    }
+
+                    DailyRecord.model_validate(daily_record)
+                except ValidationError as e:
+                    return {"message": f"Invalid record format: {e}"}
+
+                data[patient_account][key] = daily_record
+            else:
+                items = data[patient_account][key]["data"]
+                if len(items) >= 1 and items[-1]["time"] == item.time:
+                    for field in ["food", "water", "urination", "defecation"]:
+                        items[-1][field] += getattr(item, field)
+                        data[patient_account][key][f"{field}Sum"] += getattr(
+                            item, field
+                        )
+
+                else:
+                    data[patient_account][key]["count"] += 1
+                    for field in ["food", "water", "urination", "defecation"]:
+                        data[patient_account][key][f"{field}Sum"] += getattr(
+                            item, field
+                        )
+                    items.append(item.model_dump())
+
+                data[patient_account][key]["weight"] = post_request["weight"]
+
+                try:
+                    DailyRecord.model_validate(data[patient_account][key])
+                except ValidationError as e:
+                    return {"message": f"Invalid record format: {e}"}
+
+            write_json_file(DATA_JSON_PATH, data)
+            return {"message": RECORD_DATA_CREATE_SUCCESS}
+
+        elif event == UPDATE_DAILY_RECORD:
+            if not has_parameters(
+                post_request,
+                [
+                    "key",
+                    "time",
+                    "food",
+                    "water",
+                    "urination",
+                    "defecation",
+                    "weight",
+                ],
+            ):
+                return {"message": MISSING_PARAMETER}
+
+            if db.get_account_type(patient_account) != db.AccountType.PATIENT:
+                return {"message": INVALID_ACCT_TYPE}
+
+            try:
+                parse_date_key(post_request["key"])
+                parse_time(post_request["time"])
+            except ValueError as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            data = load_json_file(DATA_JSON_PATH)
+            record_time = post_request["time"]
+            key = post_request["key"]
+
+            account_data = data.get(patient_account, {})
+            if key not in account_data:
+                return {"message": RECORD_NOT_FOUND}
+
+            try:
+                updated_item = RecordItem.model_validate(
+                    {
+                        "time": post_request["time"],
+                        "food": post_request.get("food", 0),
+                        "water": post_request.get("water", 0),
+                        "urination": post_request.get("urination", 0),
+                        "defecation": post_request.get("defecation", 0),
+                    }
+                )
+
+            except ValidationError as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            day_record = account_data[key]
+            found = False
+            for item in day_record["data"]:
+                if item["time"] == record_time:
+                    for field in ["food", "water", "urination", "defecation"]:
+                        day_record[f"{field}Sum"] -= item[field]
+                        item[field] = getattr(updated_item, field)
+                        day_record[f"{field}Sum"] += item[field]
+
+                    found = True
+                    break
+
+            if not found:
+                return {"message": RECORD_NOT_FOUND}
+
+            day_record["weight"] = post_request["weight"]
+            try:
+                DailyRecord.model_validate(day_record)
+            except ValidationError as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            write_json_file(DATA_JSON_PATH, data)
+            return {"message": RECORD_DATA_UPDATE_SUCCESS}
+
+        elif event == DELETE_DAILY_RECORD:
+            if not has_parameters(post_request, ["key", "time"]):
+                return {"message": MISSING_PARAMETER}
+
+            if db.get_account_type(patient_account) != db.AccountType.PATIENT:
+                return {"message": INVALID_ACCT_TYPE}
+
+            try:
+                parse_date_key(post_request["key"])
+                parse_time(post_request["time"])
+            except Exception as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            data = load_json_file(DATA_JSON_PATH)
+            record_time = post_request["time"]
+            key = post_request["key"]
+
+            account_data = data.get(patient_account)
+            if not account_data or key not in account_data:
+                return {"message": RECORD_NOT_FOUND}
+
+            day_record = account_data[key]
+            removed_item = None
+            removed_idx = -1
+            for idx, item in enumerate(day_record["data"]):
+                if item["time"] == record_time:
+                    removed_item = item
+                    removed_idx = idx
+
+            if not removed_item:
+                return {"message": RECORD_NOT_FOUND}
+            del day_record["data"][removed_idx]
+
+            day_record["count"] -= 1
+            for field in ["food", "water", "urination", "defecation"]:
+                day_record[f"{field}Sum"] -= removed_item[field]
+
+            try:
+                DailyRecord.model_validate(day_record)
+            except ValidationError as e:
+                return {"message": f"Invalid record format: {e}"}
+
+            write_json_file(DATA_JSON_PATH, data)
+            return {"message": RECORD_DATA_DELETE_SUCCESS}
 
     elif event in [CHANGE_PASSWORD, CHANGE_USERNAME]:
         if not has_parameters(post_request, ["account", "password"]):
